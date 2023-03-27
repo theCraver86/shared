@@ -19,13 +19,13 @@ calculatedmetrics = data.frame(aw_get_calculatedmetrics()) #to get a list of ava
 ff = aw_freeform_table(
   company_id = Sys.getenv("AW_COMPANY_ID"),
   rsid = Sys.getenv("AW_REPORTSUITE_ID"),
-  date_range = c(Sys.Date() - 1, Sys.Date() - 1),
+  date_range = c(Sys.Date() - 7, Sys.Date() - 1),
   #    date_range = c(2023-03-20, 2023-03-20),
   
-  dimensions = c("daterangeday", "product", "evar9", "prop17", "category"),
-  #dimensions = c("daterangeday", "category"),
+  #dimensions = c("daterangeday", "product", "evar9", "prop17", "category"),
+  dimensions = c("daterangeday"),
   
-  metrics = c("visits","revenue"),
+  metrics = c("revenue","visits"),
   top = c(5),
   page = 0,
   filterType = "breakdown",
