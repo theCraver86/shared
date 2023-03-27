@@ -16,6 +16,24 @@ dimension = data.frame(aw_get_dimensions()) #to get a list of available dimensio
 metric = data.frame(aw_get_metrics())  #to get a list of available metrics IDs.
 calculatedmetrics = data.frame(aw_get_calculatedmetrics()) #to get a list of available calculated metrics IDs.
 segment = aw_get_segments() 
+#10296
+ff_top10_county = aw_freeform_table(
+  company_id = Sys.getenv("AW_COMPANY_ID"),
+  rsid = Sys.getenv("AW_REPORTSUITE_ID"),
+  date_range = c(Sys.Date() - 8, Sys.Date() - 2),
+  dimensions = c("evar9"),
+  metrics = c("revenue"),
+  top = c(10),
+  page = 0,
+  filterType = "breakdown",
+  segmentId = NA,
+  metricSort = "desc",
+  include_unspecified = TRUE,
+  search = c("NOT C('0','APP')"),
+  prettynames = FALSE,
+  debug = FALSE,
+  check_components = TRUE
+)
 
 ff = aw_freeform_table(
   company_id = Sys.getenv("AW_COMPANY_ID"),
@@ -24,16 +42,16 @@ ff = aw_freeform_table(
   #    date_range = c(2023-03-20, 2023-03-20),
   
   #dimensions = c("daterangeday", "product", "evar9", "prop17", "category"),
-  dimensions = c("daterangeday", "evar9"),
+  dimensions = c("evar9", "prop17", "product"),
   
   metrics = c("revenue"),
-  top = c(10),
+  top = c(,20,20),
   page = 0,
   filterType = "breakdown",
   segmentId = NA,
   metricSort = "desc",
   include_unspecified = TRUE,
-  search = NA,
+  search = c("MATCH C('it','us')", "(MATCH 'Booking')","(CONTAINS '-')"),
   prettynames = FALSE,
   debug = FALSE,
   check_components = TRUE
@@ -45,9 +63,10 @@ df_ff = data.frame(ff)
 
 
 df_ff_it <- df_ff %>%
-  filter(evar9 == "it", category == c("FlightTicket"), prop17 == c("Booking"))
+# filter(evar9 == "it", category == c("FlightTicket"), prop17 == c("Booking"))
+  select(-2)
 
-df_ff_it
+  df_ff_it
 
 
 ### Load (elsewhere)
