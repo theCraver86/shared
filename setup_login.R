@@ -44,36 +44,64 @@ segment = aw_get_segments()
 # top10_county_app = c(c('it'))
 # top10_county_app[1]
 
+# ff_VAULT = aw_freeform_table(
+#   company_id = Sys.getenv("AW_COMPANY_ID"),
+#   rsid = Sys.getenv("AW_REPORTSUITE_ID"),
+#   date_range = c(Sys.Date() - 8, Sys.Date() - 2),
+#   
+#   #dimensions = c("daterangeday", "product", "evar9", "prop17", "category"),
+#   dimensions = c("evar9", "prop17", "product", "evar101"),
+#   metrics = c("revenue"),
+#   top = c(1,1,20,20),
+#   page = 0,
+#   filterType = "breakdown",
+#   segmentId = NA,
+#   metricSort = "desc",
+#   include_unspecified = TRUE,
+#   search = c("NOT '0' AND NOT 'APP'", "(MATCH 'Booking')", "(CONTAINS '-')", "(NOT CONTAINS 'undefined')"),
+#   prettynames = TRUE,
+#   debug = FALSE,
+#   check_components = TRUE
+# )
+
+S_CW = "2023-03-20"
+typeof(S_CW)
+
 ff = aw_freeform_table(
   company_id = Sys.getenv("AW_COMPANY_ID"),
   rsid = Sys.getenv("AW_REPORTSUITE_ID"),
-  date_range = c(Sys.Date() - 8, Sys.Date() - 2),
-  
-  #dimensions = c("daterangeday", "product", "evar9", "prop17", "category"),
-  dimensions = c("evar9", "prop17", "product"),
-  
+  date_range = c(Sys.Date() - 15, Sys.Date() - 2),
+  dimensions = c("daterangeweek","evar9"),
   metrics = c("revenue"),
-  top = c(10),
+  top = c(2, 10),
   page = 0,
   filterType = "breakdown",
   segmentId = NA,
   metricSort = "desc",
   include_unspecified = TRUE,
-  search = c("NOT '0' AND NOT 'APP')", "(MATCH 'Booking')","(CONTAINS '-')"),
-  prettynames = FALSE,
+  search = c("", "NOT '0' AND NOT 'APP'"),
+  #search = NA,
+  prettynames = TRUE,
   debug = FALSE,
   check_components = TRUE
 )
 
+
 ### Trasform
 
 df_ff = data.frame(ff)
-top10_county$evar9 <- as.factor(mtcars$am)
+#top10_county$evar9 <- as.factor(mtcars$am)
 
+df_ff_l <- df_ff %>%
+  filter(Week == c("2023-03-20"))
 
-df_ff_it <- df_ff %>%
-# filter(evar9 == "it", category == c("FlightTicket"), prop17 == c("Booking"))
-  select(-2)
+df_ff_r <- df_ff %>%
+  filter(Week == c("2023-03-13"))
+  #select(-2)
+
+df_join <- df_ff_l %>% left_join( df_ff_r, 
+                           by=c('Country'))
+
 
   df_ff_it
 
