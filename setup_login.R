@@ -2,9 +2,13 @@
 
 #install.packages("adobeanalyticsr")
 #install.packages("dplyr")
+#install.packages("cleaner")
+#install.packages("gt")
 
 library(adobeanalyticsr)
 library(dplyr)
+library(cleaner) #Unistall?
+library(gt)
 
 ### Login
 
@@ -99,9 +103,22 @@ df_ff_r <- df_ff %>%
   filter(Week == c("2023-03-13"))
   #select(-2)
 
-df_join <- df_ff_l %>% left_join( df_ff_r, 
-                           by=c('Country'))
+df_elab <- df_ff_l %>% 
+  left_join( df_ff_r, by=c('Country')) %>%
+    reframe(Country, Revenue.x, Revenue.y, delta = (Revenue.x - Revenue.y)) 
 
+
+df_cosmetic <- df_elab %>%
+  rename(Revenue_PW = Revenue.x) %>% 
+    formatC(Revenue_PW, decimal.mark = ",")
+
+?as.currency
+
+#reframe(delta = (Revenue.x - Revenue.y), n = n(), .groups = "drop")
+#group_by(Country) %>%
+#summarise(Country, Revenue.x, Revenue.y, delta = (Revenue.x - Revenue.y), .groups = "drop")
+#summarize(across(pageviews:bounces, sum), .groups = "drop") %>%
+?summarize
 
   df_ff_it
 
