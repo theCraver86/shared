@@ -4,11 +4,13 @@
 #install.packages("dplyr")
 #install.packages("cleaner")
 #install.packages("gt")
+#install.packages("writexl")
 
 library(adobeanalyticsr)
 library(dplyr)
 library(cleaner) #Unistall?
 library(gt)
+library("writexl")
 
 ### Login
 
@@ -71,30 +73,73 @@ segment = aw_get_segments()
 S_CW = "2023-03-20"
 typeof(S_CW)
 
-ff = aw_freeform_table(
+### Country memo
+#dimensions = c("evar9"),
+#search = c("NOT '0' AND NOT 'APP'"),
+
+f_product = 'ROM-';
+
+ff_pageView = aw_freeform_table(
   company_id = Sys.getenv("AW_COMPANY_ID"),
   rsid = Sys.getenv("AW_REPORTSUITE_ID"),
-  date_range = c(Sys.Date() - 15, Sys.Date() - 2),
-  dimensions = c("daterangeweek","evar9"),
-  metrics = c("revenue"),
-  top = c(2, 10),
+  date_range = c(Sys.Date() - 1, Sys.Date() - 1),
+  dimensions = c("daterangeday","evar101","prop17","evar9"),
+  metrics = c("visits", "event101"),
+  top = c(1,20,1,10),
   page = 0,
   filterType = "breakdown",
   segmentId = NA,
   metricSort = "desc",
-  include_unspecified = TRUE,
-  search = c("", "NOT '0' AND NOT 'APP'"),
+  include_unspecified = FALSE,
+  search = c("", "(CONTAINS 'ROM-')", "MATCH 'Booking'", "NOT '0' AND NOT 'APP'"),
   #search = NA,
   prettynames = TRUE,
   debug = FALSE,
   check_components = TRUE
 )
 
+ff_purchase = aw_freeform_table(
+  company_id = Sys.getenv("AW_COMPANY_ID"),
+  rsid = Sys.getenv("AW_REPORTSUITE_ID"),
+  date_range = c(Sys.Date() - 1, Sys.Date() - 1),
+  dimensions = c("daterangeday","product","category","prop17", "evar9"),
+  metrics = c("orders","revenue"),
+  top = c(1,20,1,1,10),
+  page = 0,
+  filterType = "breakdown",
+  segmentId = NA,
+  metricSort = "desc",
+  include_unspecified = FALSE,
+  search = c("", "(CONTAINS 'ROM-')", "MATCH 'FlightTicket'", "MATCH 'Booking'", "NOT '0' AND NOT 'APP'"),
+  #search = NA,
+  prettynames = TRUE,
+  debug = FALSE,
+  check_components = TRUE
+)
+
+df_ff_pageView = data.frame(ff_pageView)
+df_ff_purchase = data.frame(ff_purchase)
+
+df_ff_pageView_elab <- df_ff_pageView %>% 
+  rename(Product = Route)
+
+?drop
+
+df_check <- df_ff_pageView_elab %>% 
+  left_join( df_ff_purchase, by=c('Product')) %>% 
+    mutate(
+              BCR = ifelse(XDM.e101...select.flight > 0, round(Orders / XDM.e101...select.flight,3)*100, 0)
+          ) %>% 
+    select(-c( Day.y , primaryCategory.x, primaryCategory.y, Category))
+
+str(df_check)
+
+###Excel 
+  write_xlsx(df_check, "C:\\Users\\rtadd\\OneDrive\\Desktop\\Exported\\people.xlsx")
 
 ### Trasform
 
 df_ff = data.frame(ff)
-#top10_county$evar9 <- as.factor(mtcars$am)
 
 df_ff_l <- df_ff %>%
   filter(Week == c("2023-03-20"))
