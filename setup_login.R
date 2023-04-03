@@ -77,21 +77,21 @@ typeof(S_CW)
 #dimensions = c("evar9"),
 #search = c("NOT '0' AND NOT 'APP'"),
 
-f_product = 'ROM-';
+f_product = '-';
 
 ff_pageView = aw_freeform_table(
   company_id = Sys.getenv("AW_COMPANY_ID"),
   rsid = Sys.getenv("AW_REPORTSUITE_ID"),
   date_range = c(Sys.Date() - 1, Sys.Date() - 1),
-  dimensions = c("daterangeday","evar101","prop17","evar9"),
+  dimensions = c("daterangeday", "prop17", "evar9", "evar101"),
   metrics = c("visits", "event101"),
-  top = c(1,20,1,10),
+  top = c(1,1,10,20),
   page = 0,
   filterType = "breakdown",
   segmentId = NA,
   metricSort = "desc",
   include_unspecified = FALSE,
-  search = c("", "(CONTAINS 'ROM-')", "MATCH 'Booking'", "NOT '0' AND NOT 'APP'"),
+  search = c("", "MATCH 'Booking'", "NOT '0' AND NOT 'APP'", "(CONTAINS '-')"),
   #search = NA,
   prettynames = TRUE,
   debug = FALSE,
@@ -102,15 +102,15 @@ ff_purchase = aw_freeform_table(
   company_id = Sys.getenv("AW_COMPANY_ID"),
   rsid = Sys.getenv("AW_REPORTSUITE_ID"),
   date_range = c(Sys.Date() - 1, Sys.Date() - 1),
-  dimensions = c("daterangeday","product","category","prop17", "evar9"),
-  metrics = c("orders","revenue"),
-  top = c(1,20,1,1,10),
+  dimensions = c("daterangeday","category","prop17", "evar9","product"),
+  metrics = c("revenue", "orders"),
+  top = c(1,1,1,10,20),
   page = 0,
   filterType = "breakdown",
   segmentId = NA,
   metricSort = "desc",
   include_unspecified = FALSE,
-  search = c("", "(CONTAINS 'ROM-')", "MATCH 'FlightTicket'", "MATCH 'Booking'", "NOT '0' AND NOT 'APP'"),
+  search = c("", "MATCH 'FlightTicket'", "MATCH 'Booking'", "NOT '0' AND NOT 'APP'", "(CONTAINS '-')"),
   #search = NA,
   prettynames = TRUE,
   debug = FALSE,
@@ -123,10 +123,8 @@ df_ff_purchase = data.frame(ff_purchase)
 df_ff_pageView_elab <- df_ff_pageView %>% 
   rename(Product = Route)
 
-?drop
-
 df_check <- df_ff_pageView_elab %>% 
-  left_join( df_ff_purchase, by=c('Product')) %>% 
+  right_join( df_ff_purchase, by=c('Country','Product')) %>% 
     mutate(
               BCR = ifelse(XDM.e101...select.flight > 0, round(Orders / XDM.e101...select.flight,3)*100, 0)
           ) %>% 
@@ -135,7 +133,7 @@ df_check <- df_ff_pageView_elab %>%
 str(df_check)
 
 ###Excel 
-  write_xlsx(df_check, "C:\\Users\\rtadd\\OneDrive\\Desktop\\Exported\\people.xlsx")
+  write_xlsx(ff_pageView, "C:\\Users\\rtadd\\OneDrive\\Desktop\\Exported\\people.xlsx")
 
 ### Trasform
 
