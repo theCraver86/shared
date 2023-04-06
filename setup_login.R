@@ -82,10 +82,10 @@ f_product = '-';
 ff_pageView = aw_freeform_table(
   company_id = Sys.getenv("AW_COMPANY_ID"),
   rsid = Sys.getenv("AW_REPORTSUITE_ID"),
-  date_range = c(Sys.Date() - 1, Sys.Date() - 1),
+  date_range = c(Sys.Date() - 2, Sys.Date() - 1),
   dimensions = c("daterangeday", "prop17", "evar9", "evar101"),
   metrics = c("visits", "event101"),
-  top = c(1,1,10,20),
+  top = c(2,1,10,20),
   page = 0,
   filterType = "breakdown",
   segmentId = NA,
@@ -101,10 +101,10 @@ ff_pageView = aw_freeform_table(
 ff_purchase = aw_freeform_table(
   company_id = Sys.getenv("AW_COMPANY_ID"),
   rsid = Sys.getenv("AW_REPORTSUITE_ID"),
-  date_range = c(Sys.Date() - 1, Sys.Date() - 1),
-  dimensions = c("daterangeday","category","prop17", "evar9","product"),
+  date_range = c(Sys.Date() - 2, Sys.Date() - 1),
+  dimensions = c("daterangeday","category","prop17", "evar9","evar101"),
   metrics = c("revenue", "orders"),
-  top = c(1,1,1,10,20),
+  top = c(2,1,1,10,20),
   page = 0,
   filterType = "breakdown",
   segmentId = NA,
@@ -120,20 +120,28 @@ ff_purchase = aw_freeform_table(
 df_ff_pageView = data.frame(ff_pageView)
 df_ff_purchase = data.frame(ff_purchase)
 
-df_ff_pageView_elab <- df_ff_pageView %>% 
-  rename(Product = Route)
+# df_ff_pageView_elab <- df_ff_pageView %>% 
+#   rename(Product = Route)
 
-df_check <- df_ff_pageView_elab %>% 
-  right_join( df_ff_purchase, by=c('Country','Product')) %>% 
-    mutate(
-              BCR = ifelse(XDM.e101...select.flight > 0, round(Orders / XDM.e101...select.flight,3)*100, 0)
-          ) %>% 
-    select(-c( Day.y , primaryCategory.x, primaryCategory.y, Category))
+df_check <- df_ff_pageView %>% 
+  right_join( df_ff_purchase, by=c('Day','Country','Route')) %>% 
+  rename(select_flight = XDM.e101...select.flight) %>% 
+  mutate(
+            Visits = formatC(Visits, big.mark=","),
+            BCR = percent(ifelse(select_flight > 0, Orders / select_flight, 0), accuracy = 0.1),
+            AOV = ifelse(Orders > 0, round(Revenue / Orders,1), 0)
+        ) %>% 
+  select(-c(primaryCategory.x, primaryCategory.y, Category)) %>% 
+
+  ### NEXT STEP - Spaccare in due e join
+    
+  # group_by(Day) %>%
+  # summarize(across(Revenue, sum), .groups = "drop_last")
 
 str(df_check)
 
 ###Excel 
-  write_xlsx(ff_pageView, "C:\\Users\\rtadd\\OneDrive\\Desktop\\Exported\\people.xlsx")
+  write_xlsx(df_check, "C:\\Users\\rtadd\\OneDrive\\Desktop\\Exported\\people.xlsx")
 
 ### Trasform
 
@@ -161,9 +169,6 @@ df_cosmetic <- df_elab %>%
 #group_by(Country) %>%
 #summarise(Country, Revenue.x, Revenue.y, delta = (Revenue.x - Revenue.y), .groups = "drop")
 #summarize(across(pageviews:bounces, sum), .groups = "drop") %>%
-?summarize
-
-  df_ff_it
 
 
 ### Load (elsewhere)
