@@ -5,17 +5,23 @@
 #install.packages("cleaner")
 #install.packages("gt")
 #install.packages("writexl")
+#install.packages("scales")
 
 library(adobeanalyticsr)
 library(dplyr)
 library(cleaner) #Unistall?
 library(gt)
-library("writexl")
+library(writexl)
+library(scales)
 
-### Login
-
+### Login OAUTH
 aw_auth_with('oauth')
+
+### Login JWT
+aw_auth_with('jwt')
 aw_auth()
+
+getwd()
 
 ### Extract
 dimension = data.frame(aw_get_dimensions()) #to get a list of available dimensions IDs.
@@ -131,7 +137,24 @@ df_check <- df_ff_pageView %>%
             BCR = percent(ifelse(select_flight > 0, Orders / select_flight, 0), accuracy = 0.1),
             AOV = ifelse(Orders > 0, round(Revenue / Orders,1), 0)
         ) %>% 
-  select(-c(primaryCategory.x, primaryCategory.y, Category)) %>% 
+  select(-c(primaryCategory.x, primaryCategory.y, Category, Visits, Orders)) 
+
+df_pw <- df_check %>% 
+    filter(Day == c("2023-04-08")) %>% 
+    rename_with( ~ paste0(.x, "_pw"))
+
+df_cw <- df_check %>% 
+  filter(Day == c("2023-04-09")) %>% 
+  rename_with( ~ paste0(.x, "_cw"))
+
+df_join_wow <- df_pw %>% 
+  left_join( df_cw, by=c('Country','Route')) %>% 
+    mutate(
+      Visits = formatC(Visits, big.mark=","),
+      BCR = percent(ifelse(select_flight > 0, Orders / select_flight, 0), accuracy = 0.1),
+      AOV = ifelse(Orders > 0, round(Revenue / Orders,1), 0)
+    )
+  
 
   ### NEXT STEP - Spaccare in due e join
     
