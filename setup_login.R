@@ -85,12 +85,13 @@ typeof(S_CW)
 #dimensions = c("evar9"),
 #search = c("NOT '0' AND NOT 'APP'"),
 
-f_product = '-';
+d_start = '2023-04-11';
+d_end = '2023-04-12';
 
 ff_pageView = aw_freeform_table(
   company_id = Sys.getenv("AW_COMPANY_ID"),
   rsid = Sys.getenv("AW_REPORTSUITE_ID"),
-  date_range = c(Sys.Date() - 2, Sys.Date() - 1),
+  date_range = c(d_start, d_end),
   dimensions = c("daterangeday", "prop17", "evar9", "evar101"),
   metrics = c("visits", "event101"),
   top = c(2,1,10,20),
@@ -109,7 +110,7 @@ ff_pageView = aw_freeform_table(
 ff_purchase = aw_freeform_table(
   company_id = Sys.getenv("AW_COMPANY_ID"),
   rsid = Sys.getenv("AW_REPORTSUITE_ID"),
-  date_range = c(Sys.Date() - 2, Sys.Date() - 1),
+  date_range = c(d_start, d_end),
   dimensions = c("daterangeday","category","prop17", "evar9","evar101"),
   metrics = c("revenue", "orders"),
   top = c(2,1,1,10,20),
@@ -142,7 +143,7 @@ df_check <- df_ff_pageView %>%
   select(-c(primaryCategory.x, primaryCategory.y, Category, Visits, Orders)) 
 
 df_pw <- df_check %>% 
-    filter(Day == c("2023-04-11")) %>% 
+    filter(Day == d_start) %>% 
     rename(
       select_flight_pw = select_flight,
       Revenue_pw = Revenue,
@@ -153,7 +154,7 @@ df_pw <- df_check %>%
 
 
 df_cw <- df_check %>% 
-  filter(Day == c("2023-04-12")) %>% 
+  filter(Day == d_end) %>% 
   rename(
     select_flight_cw = select_flight,
     Revenue_cw = Revenue,
