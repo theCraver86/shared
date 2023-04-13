@@ -7,6 +7,9 @@
 # Predisporre esportazione Excel
 # Colorare i dati
 
+setwd("C:/Users/rtadd/OneDrive/Documenti")
+getwd()
+
 mtcars %>%
   summarise(mean = mean(disp), n = n())
 
@@ -41,3 +44,4 @@ DF
 #         cost
 #1  $10,000.00
 #2 $200,000.00
+

@@ -7,6 +7,9 @@
 #install.packages("writexl")
 #install.packages("scales")
 
+##PDF: https://rpubs.com/sdi_ben/adobeanalyticsr_demo
+##
+
 library(adobeanalyticsr)
 library(dplyr)
 library(cleaner) #Unistall?
@@ -15,13 +18,12 @@ library(writexl)
 library(scales)
 
 ### Login OAUTH
-aw_auth_with('oauth')
+#aw_auth_with('oauth')
 
 ### Login JWT
 aw_auth_with('jwt')
 aw_auth()
 
-getwd()
 
 ### Extract
 dimension = data.frame(aw_get_dimensions()) #to get a list of available dimensions IDs.
@@ -134,25 +136,39 @@ df_check <- df_ff_pageView %>%
   rename(select_flight = XDM.e101...select.flight) %>% 
   mutate(
             Visits = formatC(Visits, big.mark=","),
-            BCR = percent(ifelse(select_flight > 0, Orders / select_flight, 0), accuracy = 0.1),
+            BCR = ifelse(select_flight > 0, Orders / select_flight, 0),
             AOV = ifelse(Orders > 0, round(Revenue / Orders,1), 0)
         ) %>% 
   select(-c(primaryCategory.x, primaryCategory.y, Category, Visits, Orders)) 
 
 df_pw <- df_check %>% 
-    filter(Day == c("2023-04-08")) %>% 
-    rename_with( ~ paste0(.x, "_pw"))
+    filter(Day == c("2023-04-11")) %>% 
+    rename(
+      select_flight_pw = select_flight,
+      Revenue_pw = Revenue,
+      BCR_pw = BCR,
+      AOV_pw = AOV
+    ) %>% 
+  select(-c(Day)) 
+
 
 df_cw <- df_check %>% 
-  filter(Day == c("2023-04-09")) %>% 
-  rename_with( ~ paste0(.x, "_cw"))
+  filter(Day == c("2023-04-12")) %>% 
+  rename(
+    select_flight_cw = select_flight,
+    Revenue_cw = Revenue,
+    BCR_cw = BCR,
+    AOV_cw = AOV
+  ) %>% 
+  select(-c(Day)) 
 
 df_join_wow <- df_pw %>% 
   left_join( df_cw, by=c('Country','Route')) %>% 
     mutate(
-      Visits = formatC(Visits, big.mark=","),
-      BCR = percent(ifelse(select_flight > 0, Orders / select_flight, 0), accuracy = 0.1),
-      AOV = ifelse(Orders > 0, round(Revenue / Orders,1), 0)
+      select_flight_delta = percent(ifelse(select_flight_cw > 0, (select_flight_cw - select_flight_pw) / select_flight_cw, 0), accuracy = 0.1),
+      Revenue_delta = percent(ifelse(Revenue_cw > 0, (Revenue_cw - Revenue_pw) / Revenue_cw, 0), accuracy = 0.1),
+      BCR_delta = (BCR_cw - BCR_pw)*100,
+      AOV_delta = AOV_cw - AOV_pw
     )
   
 
@@ -164,7 +180,7 @@ df_join_wow <- df_pw %>%
 str(df_check)
 
 ###Excel 
-  write_xlsx(df_check, "C:\\Users\\rtadd\\OneDrive\\Desktop\\Exported\\people.xlsx")
+  write_xlsx(df_join_wow, "C:/Users/rtadd/OneDrive/Desktop/R/1exported/check_.xlsx")
 
 ### Trasform
 
