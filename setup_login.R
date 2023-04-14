@@ -31,137 +31,98 @@ metric = data.frame(aw_get_metrics())  #to get a list of available metrics IDs.
 calculatedmetrics = data.frame(aw_get_calculatedmetrics()) #to get a list of available calculated metrics IDs.
 segment = aw_get_segments() 
 
-# ff_top10_county = aw_freeform_table(
-#   company_id = Sys.getenv("AW_COMPANY_ID"),
-#   rsid = Sys.getenv("AW_REPORTSUITE_ID"),
-#   date_range = c(Sys.Date() - 8, Sys.Date() - 2),
-#   dimensions = c("evar9"),
-#   metrics = c("revenue"),
-#   top = c(10),
-#   page = 0,
-#   filterType = "breakdown",
-#   segmentId = NA,
-#   metricSort = "desc",
-#   include_unspecified = TRUE,
-#   search = c("NOT '0' AND NOT 'APP')"),
-#   prettynames = FALSE,
-#   debug = FALSE,
-#   check_components = TRUE
-# )
-# 
-# df_ff_top10_county = data.frame(ff_top10_county)
-# 
-# top10_county <- df_ff_top10_county %>%
-# select(-2) %>%
-#   as.factor()
-#   
-# top10_county_app = c(c('it'))
-# top10_county_app[1]
+#Setup Variable
+d_start = '2023-03-27';
+d_end= '2023-04-09';
 
-# ff_VAULT = aw_freeform_table(
-#   company_id = Sys.getenv("AW_COMPANY_ID"),
-#   rsid = Sys.getenv("AW_REPORTSUITE_ID"),
-#   date_range = c(Sys.Date() - 8, Sys.Date() - 2),
-#   
-#   #dimensions = c("daterangeday", "product", "evar9", "prop17", "category"),
-#   dimensions = c("evar9", "prop17", "product", "evar101"),
-#   metrics = c("revenue"),
-#   top = c(1,1,20,20),
-#   page = 0,
-#   filterType = "breakdown",
-#   segmentId = NA,
-#   metricSort = "desc",
-#   include_unspecified = TRUE,
-#   search = c("NOT '0' AND NOT 'APP'", "(MATCH 'Booking')", "(CONTAINS '-')", "(NOT CONTAINS 'undefined')"),
-#   prettynames = TRUE,
-#   debug = FALSE,
-#   check_components = TRUE
-# )
+nDateRange = 2;
+nCategory = 1;
+nPrimaryCategory = 1;
+nCountries = 1;
+nRoute = 20;
 
-S_CW = "2023-03-20"
-typeof(S_CW)
-
-### Country memo
-#dimensions = c("evar9"),
-#search = c("NOT '0' AND NOT 'APP'"),
-
-d_start = '2023-04-11';
-d_end = '2023-04-12';
-
-ff_pageView = aw_freeform_table(
+#Main
+ ff_pageView = aw_freeform_table(
   company_id = Sys.getenv("AW_COMPANY_ID"),
   rsid = Sys.getenv("AW_REPORTSUITE_ID"),
   date_range = c(d_start, d_end),
-  dimensions = c("daterangeday", "prop17", "evar9", "evar101"),
-  metrics = c("visits", "event101"),
-  top = c(2,1,10,20),
+  dimensions = c("daterangeweek" , "prop17", "evar9", "evar101"),
+  metrics = c("revenue", "visits", "event101"),
+  #top = c(2,1,10, 20),
+  top = c(nDateRange, nPrimaryCategory, nCountries, nRoute),
   page = 0,
   filterType = "breakdown",
   segmentId = NA,
   metricSort = "desc",
   include_unspecified = FALSE,
   search = c("", "MATCH 'Booking'", "NOT '0' AND NOT 'APP'", "(CONTAINS '-')"),
-  #search = NA,
-  prettynames = TRUE,
-  debug = FALSE,
-  check_components = TRUE
-)
-
-ff_purchase = aw_freeform_table(
-  company_id = Sys.getenv("AW_COMPANY_ID"),
-  rsid = Sys.getenv("AW_REPORTSUITE_ID"),
-  date_range = c(d_start, d_end),
-  dimensions = c("daterangeday","category","prop17", "evar9","evar101"),
-  metrics = c("revenue", "orders"),
-  top = c(2,1,1,10,20),
-  page = 0,
-  filterType = "breakdown",
-  segmentId = NA,
-  metricSort = "desc",
-  include_unspecified = FALSE,
-  search = c("", "MATCH 'FlightTicket'", "MATCH 'Booking'", "NOT '0' AND NOT 'APP'", "(CONTAINS '-')"),
-  #search = NA,
   prettynames = TRUE,
   debug = FALSE,
   check_components = TRUE
 )
 
 df_ff_pageView = data.frame(ff_pageView)
+
+ff_purchase = aw_freeform_table(
+  company_id = Sys.getenv("AW_COMPANY_ID"),
+  rsid = Sys.getenv("AW_REPORTSUITE_ID"),
+  date_range = c(d_start, d_end),
+  dimensions = c("daterangeweek","category","prop17", "evar9","evar101"),
+  metrics = c("revenue", "orders"),
+  #top = c(2,1,1,10,20),
+  top = c(nDateRange, nCategory, nPrimaryCategory, nCountries, nRoute),
+  page = 0,
+  filterType = "breakdown",
+  segmentId = NA,
+  metricSort = "desc",
+  include_unspecified = FALSE,
+  search = c("", "MATCH 'FlightTicket'", "MATCH 'Booking'", "NOT '0' AND NOT 'APP'", "(CONTAINS '-')"),
+  prettynames = TRUE,
+  debug = FALSE,
+  check_components = TRUE
+)
+
 df_ff_purchase = data.frame(ff_purchase)
 
-# df_ff_pageView_elab <- df_ff_pageView %>% 
-#   rename(Product = Route)
-
 df_check <- df_ff_pageView %>% 
-  right_join( df_ff_purchase, by=c('Day','Country','Route')) %>% 
-  rename(select_flight = XDM.e101...select.flight) %>% 
+  right_join( df_ff_purchase, by=c('Week','Country','Route')) %>% 
+  rename(
+    select_flight = XDM.e101...select.flight,
+    Revenue = Revenue.y
+        ) %>% 
   mutate(
             Visits = formatC(Visits, big.mark=","),
             BCR = ifelse(select_flight > 0, Orders / select_flight, 0),
             AOV = ifelse(Orders > 0, round(Revenue / Orders,1), 0)
         ) %>% 
-  select(-c(primaryCategory.x, primaryCategory.y, Category, Visits, Orders)) 
+  select(-c(primaryCategory.x, primaryCategory.y, Category, Visits, Orders, Revenue.x)) 
+
+#Capire come applicare il rename cross colonne
+suf <- "_pw";
+
+W1_start = d_start;
+W2_start = '2023-04-03';
 
 df_pw <- df_check %>% 
-    filter(Day == d_start) %>% 
+    filter(Week == W1_start) %>% 
     rename(
       select_flight_pw = select_flight,
+      #Revenue + suf = Revenue,
       Revenue_pw = Revenue,
       BCR_pw = BCR,
       AOV_pw = AOV
     ) %>% 
-  select(-c(Day)) 
-
+  select(-c(Week)) 
 
 df_cw <- df_check %>% 
-  filter(Day == d_end) %>% 
+  filter(Week == W2_start) %>% 
   rename(
     select_flight_cw = select_flight,
     Revenue_cw = Revenue,
     BCR_cw = BCR,
     AOV_cw = AOV
   ) %>% 
-  select(-c(Day)) 
+  select(-c(Week)) 
 
 df_join_wow <- df_pw %>% 
   left_join( df_cw, by=c('Country','Route')) %>% 
@@ -170,19 +131,16 @@ df_join_wow <- df_pw %>%
       Revenue_delta = percent(ifelse(Revenue_cw > 0, (Revenue_cw - Revenue_pw) / Revenue_cw, 0), accuracy = 0.1),
       BCR_delta = (BCR_cw - BCR_pw)*100,
       AOV_delta = AOV_cw - AOV_pw
-    )
+    ) %>% 
+  select(-c(select_flight_pw, Revenue_pw, BCR_pw, AOV_pw)) 
   
-
-  ### NEXT STEP - Spaccare in due e join
-    
   # group_by(Day) %>%
   # summarize(across(Revenue, sum), .groups = "drop_last")
 
-str(df_check)
-
 ###Excel 
   write_xlsx(df_join_wow, "C:/Users/rtadd/OneDrive/Desktop/R/1exported/check_.xlsx")
-
+  write_xlsx(df_ff_pageView, "C:/Users/rtadd/OneDrive/Desktop/R/1exported/check_.xlsx")
+  
 ### Trasform
 
 df_ff = data.frame(ff)

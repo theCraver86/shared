@@ -10,6 +10,11 @@
 setwd("C:/Users/rtadd/OneDrive/Documenti")
 getwd()
 
+str(df_check)
+
+S_CW = "2023-03-20"
+typeof(S_CW)
+
 mtcars %>%
   summarise(mean = mean(disp), n = n())
 
