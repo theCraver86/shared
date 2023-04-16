@@ -38,8 +38,14 @@ d_end= '2023-04-09';
 nDateRange = 2;
 nCategory = 1;
 nPrimaryCategory = 1;
-nCountries = 1;
-nRoute = 20;
+nCountries = 10;
+nRoute = 30;
+filter_debug  = 'ROM-PMO';
+
+# %>%  
+#   filter(
+#     Route == filter_debug
+#   )
 
 #Main
  ff_pageView = aw_freeform_table(
@@ -82,10 +88,10 @@ ff_purchase = aw_freeform_table(
   check_components = TRUE
 )
 
-df_ff_purchase = data.frame(ff_purchase)
+df_ff_purchase = data.frame(ff_purchase) 
 
 df_check <- df_ff_pageView %>% 
-  right_join( df_ff_purchase, by=c('Week','Country','Route')) %>% 
+  right_join( df_ff_purchase, by=c('Week','Country','Route')) %>%
   rename(
     select_flight = XDM.e101...select.flight,
     Revenue = Revenue.y
@@ -96,6 +102,14 @@ df_check <- df_ff_pageView %>%
             AOV = ifelse(Orders > 0, round(Revenue / Orders,1), 0)
         ) %>% 
   select(-c(primaryCategory.x, primaryCategory.y, Category, Visits, Orders, Revenue.x)) 
+
+# %>% filter(Week == '2023-03-27')
+  
+  # %>% 
+  #   filter(
+  #     Route == 'NAP-MIL',
+  #     Week == '2023-03-27'
+  #   )
 
 #Capire come applicare il rename cross colonne
 suf <- "_pw";
@@ -124,22 +138,34 @@ df_cw <- df_check %>%
   ) %>% 
   select(-c(Week)) 
 
-df_join_wow <- df_pw %>% 
-  left_join( df_cw, by=c('Country','Route')) %>% 
+df_join_wow <- df_cw %>% 
+  left_join( df_pw, by=c('Country','Route')) %>% 
     mutate(
-      select_flight_delta = percent(ifelse(select_flight_cw > 0, (select_flight_cw - select_flight_pw) / select_flight_cw, 0), accuracy = 0.1),
-      Revenue_delta = percent(ifelse(Revenue_cw > 0, (Revenue_cw - Revenue_pw) / Revenue_cw, 0), accuracy = 0.1),
+      select_flight_delta = percent(ifelse(select_flight_cw > 0, (select_flight_cw - select_flight_pw) / select_flight_pw, 0), accuracy = 0.1),
+      Revenue_delta = percent(ifelse(Revenue_cw > 0, (Revenue_cw - Revenue_pw) / Revenue_pw, 0), accuracy = 0.1),
       BCR_delta = (BCR_cw - BCR_pw)*100,
       AOV_delta = AOV_cw - AOV_pw
     ) %>% 
   select(-c(select_flight_pw, Revenue_pw, BCR_pw, AOV_pw)) 
-  
+
+#Order & Extract
+df_export <- df_join_wow %>% 
+ # select(c(Country, Revenue_cw, Route)) %>% 
+  arrange(desc(Country), desc(Revenue_cw), Route, by_group = TRUE) %>%
+  group_by(Country)  %>%
+  slice(1:20) %>% 
+  arrange(desc(Country), desc(Revenue_cw), Route, by_group = TRUE)
+
   # group_by(Day) %>%
   # summarize(across(Revenue, sum), .groups = "drop_last")
 
 ###Excel 
-  write_xlsx(df_join_wow, "C:/Users/rtadd/OneDrive/Desktop/R/1exported/check_.xlsx")
-  write_xlsx(df_ff_pageView, "C:/Users/rtadd/OneDrive/Desktop/R/1exported/check_.xlsx")
+  write_xlsx(df_join_wow, "C:/Users/rtadd/OneDrive/Desktop/R/1exported/df_join_wow.xlsx")
+  write_xlsx(df_check, "C:/Users/rtadd/OneDrive/Desktop/R/1exported/df_check.xlsx")
+  write_xlsx(df_ff_purchase, "C:/Users/rtadd/OneDrive/Desktop/R/1exported/df_ff_purchase.xlsx")
+  write_xlsx(df_ff_pageView, "C:/Users/rtadd/OneDrive/Desktop/R/1exported/df_ff_pageView.xlsx")
+
+  write_xlsx(df_export, "C:/Users/rtadd/OneDrive/Desktop/R/1exported/df_export.xlsx")
   
 ### Trasform
 
