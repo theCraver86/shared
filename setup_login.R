@@ -10,6 +10,10 @@
 ##PDF: https://rpubs.com/sdi_ben/adobeanalyticsr_demo
 ##
 
+#--------------> TO DO: 3. Clean select_flight_delta = inf
+#                       2. Validation Data
+#                       1. Verify number row tables
+
 library(adobeanalyticsr)
 library(dplyr)
 library(cleaner) #Unistall?
@@ -26,56 +30,62 @@ aw_auth()
 
 
 ### Extract
-dimension = data.frame(aw_get_dimensions()) #to get a list of available dimensions IDs.
-metric = data.frame(aw_get_metrics())  #to get a list of available metrics IDs.
-calculatedmetrics = data.frame(aw_get_calculatedmetrics()) #to get a list of available calculated metrics IDs.
-segment = aw_get_segments() 
-
-#Setup Variable
-d_start = '2023-03-27';
-d_end= '2023-04-09';
-
-nDateRange = 2;
-nCategory = 1;
-nPrimaryCategory = 1;
-nCountries = 10;
-nRoute = 30;
-filter_debug  = 'ROM-PMO';
+# dimension = data.frame(aw_get_dimensions()) #to get a list of available dimensions IDs.
+# metric = data.frame(aw_get_metrics())  #to get a list of available metrics IDs.
+# calculatedmetrics = data.frame(aw_get_calculatedmetrics()) #to get a list of available calculated metrics IDs.
+# segment = aw_get_segments() 
 
 # %>%  
 #   filter(
 #     Route == filter_debug
 #   )
+# filter_debug  = 'ROM-PMO';
 
-#Main
- ff_pageView = aw_freeform_table(
+
+#Setup Variable
+nDateRange = 2;
+nCategory = 1;
+nPrimaryCategory = 1;
+
+d_start = '2023-03-27';
+d_end= '2023-04-09';
+
+W1_start = d_start;
+W2_start = '2023-04-03';
+
+nCountries = 10;
+
+###top10Countries_purchase
+ff_top10Countries_purchase = aw_freeform_table(
   company_id = Sys.getenv("AW_COMPANY_ID"),
   rsid = Sys.getenv("AW_REPORTSUITE_ID"),
-  date_range = c(d_start, d_end),
-  dimensions = c("daterangeweek" , "prop17", "evar9", "evar101"),
-  metrics = c("revenue", "visits", "event101"),
-  #top = c(2,1,10, 20),
-  top = c(nDateRange, nPrimaryCategory, nCountries, nRoute),
+  date_range = c(W2_start, d_end),
+  dimensions = c("daterangeweek","category","prop17", "evar9"),
+  metrics = c("revenue", "orders"),
+  top = c(nDateRange, nCategory, nPrimaryCategory, nCountries), #nDateRange = 1;
   page = 0,
   filterType = "breakdown",
   segmentId = NA,
   metricSort = "desc",
   include_unspecified = FALSE,
-  search = c("", "MATCH 'Booking'", "NOT '0' AND NOT 'APP'", "(CONTAINS '-')"),
+  search = c("", "MATCH 'FlightTicket'", "MATCH 'Booking'", "NOT '0' AND NOT 'APP'"),
   prettynames = TRUE,
   debug = FALSE,
   check_components = TRUE
 )
 
-df_ff_pageView = data.frame(ff_pageView)
+df_ff_top10Countries_purchase = data.frame(ff_top10Countries_purchase)
 
+nCountries = 20; # VAULT >=20
+nRoute = 100; # VAULT >=100
+
+###Purchase
 ff_purchase = aw_freeform_table(
   company_id = Sys.getenv("AW_COMPANY_ID"),
   rsid = Sys.getenv("AW_REPORTSUITE_ID"),
   date_range = c(d_start, d_end),
   dimensions = c("daterangeweek","category","prop17", "evar9","evar101"),
   metrics = c("revenue", "orders"),
-  #top = c(2,1,1,10,20),
   top = c(nDateRange, nCategory, nPrimaryCategory, nCountries, nRoute),
   page = 0,
   filterType = "breakdown",
@@ -88,7 +98,38 @@ ff_purchase = aw_freeform_table(
   check_components = TRUE
 )
 
-df_ff_purchase = data.frame(ff_purchase) 
+df_ff_purchase = data.frame(ff_purchase) %>% 
+filter(tolower(Country) %in% df_ff_top10Countries_purchase$Country)
+
+nCountries = 20; # VAULT >=20
+nRoute = 100; # VAULT >=100
+
+###Page View
+ff_pageView = aw_freeform_table(
+  company_id = Sys.getenv("AW_COMPANY_ID"),
+  rsid = Sys.getenv("AW_REPORTSUITE_ID"),
+  date_range = c(d_start, d_end),
+  dimensions = c("daterangeweek" , "prop17", "evar9", "evar101"),
+  metrics = c("revenue", "visits", "event101"),
+  top = c(nDateRange, nPrimaryCategory, nCountries, nRoute),
+  page = 0,
+  filterType = "breakdown",
+  segmentId = NA,
+  metricSort = "desc",
+  include_unspecified = FALSE,
+  search = c("", "MATCH 'Booking'", "NOT '0' AND NOT 'APP'", "(CONTAINS '-')"),
+  prettynames = TRUE,
+  debug = FALSE,
+  check_components = TRUE
+)
+
+df_ff_pageView = data.frame(ff_pageView) %>% 
+  filter(tolower(Country) %in% df_ff_top10Countries_purchase$Country)
+  
+  # %>% 
+  # group_by(Country)  %>%
+  # summarise(Revenue = sum(Revenue)) %>% 
+  # arrange(desc(Revenue), by_group = TRUE) 
 
 df_check <- df_ff_pageView %>% 
   right_join( df_ff_purchase, by=c('Week','Country','Route')) %>%
@@ -112,16 +153,13 @@ df_check <- df_ff_pageView %>%
   #   )
 
 #Capire come applicare il rename cross colonne
-suf <- "_pw";
-
-W1_start = d_start;
-W2_start = '2023-04-03';
+#suf <- "_pw";
+#Revenue + suf = Revenue,
 
 df_pw <- df_check %>% 
     filter(Week == W1_start) %>% 
     rename(
       select_flight_pw = select_flight,
-      #Revenue + suf = Revenue,
       Revenue_pw = Revenue,
       BCR_pw = BCR,
       AOV_pw = AOV
@@ -162,32 +200,39 @@ df_export <- df_join_wow %>%
 ###Excel 
   write_xlsx(df_join_wow, "C:/Users/rtadd/OneDrive/Desktop/R/1exported/df_join_wow.xlsx")
   write_xlsx(df_check, "C:/Users/rtadd/OneDrive/Desktop/R/1exported/df_check.xlsx")
-  write_xlsx(df_ff_purchase, "C:/Users/rtadd/OneDrive/Desktop/R/1exported/df_ff_purchase.xlsx")
+  write_xlsx(df_ff_purchase, "C:/Users/rtadd/OneDrive/Desktop/R/1exported/df_ff_purchase_.xlsx")
   write_xlsx(df_ff_pageView, "C:/Users/rtadd/OneDrive/Desktop/R/1exported/df_ff_pageView.xlsx")
 
-  write_xlsx(df_export, "C:/Users/rtadd/OneDrive/Desktop/R/1exported/df_export.xlsx")
+  write_xlsx(df_export, "C:/Users/rtadd/OneDrive/Desktop/R/1exported/df_export_.xlsx")
   
 ### Trasform
 
-df_ff = data.frame(ff)
-
-df_ff_l <- df_ff %>%
-  filter(Week == c("2023-03-20"))
-
-df_ff_r <- df_ff %>%
-  filter(Week == c("2023-03-13"))
-  #select(-2)
-
-df_elab <- df_ff_l %>% 
-  left_join( df_ff_r, by=c('Country')) %>%
-    reframe(Country, Revenue.x, Revenue.y, delta = (Revenue.x - Revenue.y)) 
-
-
-df_cosmetic <- df_elab %>%
-  rename(Revenue_PW = Revenue.x) %>% 
-    formatC(Revenue_PW, decimal.mark = ",")
-
-?as.currency
+  # %>% 
+  # group_by(Country)  %>%
+  # summarise(Revenue = sum(Revenue)) %>%
+  # arrange(desc(Revenue), by_group = TRUE)
+  
+  
+# 
+# df_ff = data.frame(ff)
+# 
+# df_ff_l <- df_ff %>%
+#   filter(Week == c("2023-03-20"))
+# 
+# df_ff_r <- df_ff %>%
+#   filter(Week == c("2023-03-13"))
+#   #select(-2)
+# 
+# df_elab <- df_ff_l %>% 
+#   left_join( df_ff_r, by=c('Country')) %>%
+#     reframe(Country, Revenue.x, Revenue.y, delta = (Revenue.x - Revenue.y)) 
+# 
+# 
+# df_cosmetic <- df_elab %>%
+#   rename(Revenue_PW = Revenue.x) %>% 
+#     formatC(Revenue_PW, decimal.mark = ",")
+# 
+# ?as.currency
 
 #reframe(delta = (Revenue.x - Revenue.y), n = n(), .groups = "drop")
 #group_by(Country) %>%
@@ -199,6 +244,13 @@ df_cosmetic <- df_elab %>%
 
 
 ### Test & Debug
+
+##### Top10 Countries
+# df_ff_top10countries <- df_ff_purchase %>% 
+#   filter(Week == W2_start) %>% 
+#   group_by(Week, Country)  %>%
+#   summarise(Revenue = sum(Revenue)) %>% 
+#   arrange(Week, desc(Revenue), by_group = TRUE)
 
 # metric[,1]
 # dimension[,1]
