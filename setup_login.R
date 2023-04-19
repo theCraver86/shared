@@ -12,7 +12,7 @@
 
 #--------------> TO DO: 3. Clean select_flight_delta = inf
 #                       2. Validation Data
-#                       1. Verify number row tables
+#                       
 
 library(adobeanalyticsr)
 library(dplyr)
@@ -20,6 +20,8 @@ library(cleaner) #Unistall?
 library(gt)
 library(writexl)
 library(scales)
+
+#set_config(use_proxy("proxy.user.alitalia.local", port = 8080, username = "IT011820", password = "19Miles86@", auth = "basic"))
 
 ### Login OAUTH
 #aw_auth_with('oauth')
