@@ -49,11 +49,16 @@ nDateRange = 2;
 nCategory = 1;
 nPrimaryCategory = 1;
 
-d_start = '2023-03-27';
-d_end= '2023-04-09';
 
-W1_start = d_start;
-W2_start = '2023-04-03';
+PW_start = '2023-04-10';
+
+PW_start = as.Date(PW_start , "%Y-%m-%d");
+
+#CW_start = '2023-04-03';
+CW_start = as.Date(PW_start , "%Y-%m-%d") + 7;
+
+#CW_end = '2023-04-09';
+CW_end = as.Date(PW_start , "%Y-%m-%d") + 13;
 
 nCountries = 10;
 
@@ -61,7 +66,7 @@ nCountries = 10;
 ff_top10Countries_purchase = aw_freeform_table(
   company_id = Sys.getenv("AW_COMPANY_ID"),
   rsid = Sys.getenv("AW_REPORTSUITE_ID"),
-  date_range = c(W2_start, d_end),
+  date_range = c(CW_start, CW_end),
   dimensions = c("daterangeweek","category","prop17", "evar9"),
   metrics = c("revenue", "orders"),
   top = c(nDateRange, nCategory, nPrimaryCategory, nCountries), #nDateRange = 1;
@@ -85,7 +90,7 @@ nRoute = 100; # VAULT >=100
 ff_purchase = aw_freeform_table(
   company_id = Sys.getenv("AW_COMPANY_ID"),
   rsid = Sys.getenv("AW_REPORTSUITE_ID"),
-  date_range = c(d_start, d_end),
+  date_range = c(PW_start, CW_end),
   dimensions = c("daterangeweek","category","prop17", "evar9","evar101"),
   metrics = c("revenue", "orders"),
   top = c(nDateRange, nCategory, nPrimaryCategory, nCountries, nRoute),
@@ -110,7 +115,7 @@ nRoute = 100; # VAULT >=100
 ff_pageView = aw_freeform_table(
   company_id = Sys.getenv("AW_COMPANY_ID"),
   rsid = Sys.getenv("AW_REPORTSUITE_ID"),
-  date_range = c(d_start, d_end),
+  date_range = c(PW_start, CW_end),
   dimensions = c("daterangeweek" , "prop17", "evar9", "evar101"),
   metrics = c("revenue", "visits", "event101"),
   top = c(nDateRange, nPrimaryCategory, nCountries, nRoute),
@@ -144,7 +149,8 @@ df_check <- df_ff_pageView %>%
             BCR = ifelse(select_flight > 0, Orders / select_flight, 0),
             AOV = ifelse(Orders > 0, round(Revenue / Orders,1), 0)
         ) %>% 
-  select(-c(primaryCategory.x, primaryCategory.y, Category, Visits, Orders, Revenue.x)) 
+ # select(-c(primaryCategory.x, primaryCategory.y, Category, Visits, Orders, Revenue.x)) 
+  select(-c(primaryCategory.x, primaryCategory.y, Category, Visits, Revenue.x)) 
 
 # %>% filter(Week == '2023-03-27')
   
@@ -159,7 +165,7 @@ df_check <- df_ff_pageView %>%
 #Revenue + suf = Revenue,
 
 df_pw <- df_check %>% 
-    filter(Week == W1_start) %>% 
+    filter(Week == PW_start) %>% 
     rename(
       select_flight_pw = select_flight,
       Revenue_pw = Revenue,
@@ -169,12 +175,13 @@ df_pw <- df_check %>%
   select(-c(Week)) 
 
 df_cw <- df_check %>% 
-  filter(Week == W2_start) %>% 
+  filter(Week == CW_start) %>% 
   rename(
     select_flight_cw = select_flight,
     Revenue_cw = Revenue,
     BCR_cw = BCR,
-    AOV_cw = AOV
+    AOV_cw = AOV,
+    Orders_cw = Orders
   ) %>% 
   select(-c(Week)) 
 
@@ -249,7 +256,7 @@ df_export <- df_join_wow %>%
 
 ##### Top10 Countries
 # df_ff_top10countries <- df_ff_purchase %>% 
-#   filter(Week == W2_start) %>% 
+#   filter(Week == CW_start) %>% 
 #   group_by(Week, Country)  %>%
 #   summarise(Revenue = sum(Revenue)) %>% 
 #   arrange(Week, desc(Revenue), by_group = TRUE)
