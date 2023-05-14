@@ -1,12 +1,5 @@
 ### Setup
 
-#install.packages("adobeanalyticsr")
-#install.packages("dplyr")
-#install.packages("cleaner")
-#install.packages("gt")
-#install.packages("writexl")
-#install.packages("scales")
-
 ##PDF: https://rpubs.com/sdi_ben/adobeanalyticsr_demo
 ##
 
@@ -20,6 +13,9 @@ library(cleaner) #Unistall?
 library(gt)
 library(writexl)
 library(scales)
+# library(rJava)
+# library(xlsxjars)
+# library(xlsx)
 
 #set_config(use_proxy("proxy.user.alitalia.local", port = 8080, username = "IT011820", password = "19Miles86@", auth = "basic"))
 
@@ -50,7 +46,7 @@ nCategory = 1;
 nPrimaryCategory = 1;
 
 
-PW_start = '2023-04-10';
+PW_start = '2023-03-20';
 
 PW_start = as.Date(PW_start , "%Y-%m-%d");
 
@@ -61,6 +57,8 @@ CW_start = as.Date(PW_start , "%Y-%m-%d") + 7;
 CW_end = as.Date(PW_start , "%Y-%m-%d") + 13;
 
 nCountries = 10;
+
+### Section: By Country 
 
 ###top10Countries_purchase
 ff_top10Countries_purchase = aw_freeform_table(
@@ -82,6 +80,9 @@ ff_top10Countries_purchase = aw_freeform_table(
 )
 
 df_ff_top10Countries_purchase = data.frame(ff_top10Countries_purchase)
+
+
+### Section: By O&D 
 
 nCountries = 20; # VAULT >=20
 nRoute = 100; # VAULT >=100
@@ -213,6 +214,8 @@ df_export <- df_join_wow %>%
   write_xlsx(df_ff_pageView, "C:/Users/rtadd/OneDrive/Desktop/R/1exported/df_ff_pageView.xlsx")
 
   write_xlsx(df_export, "C:/Users/rtadd/OneDrive/Desktop/R/1exported/df_export_.xlsx")
+  
+  write.xlsx2(df_export, file, sheetName="Sheet1", col.names=TRUE, row.names=TRUE, append=FALSE)
   
 ### Trasform
 
