@@ -7,7 +7,7 @@
   library(writexl)
   library(scales)
 
-### - Function
+  ### - Function
 
   extract_df <- function(date, dimensions, metrics, top, search){
     
@@ -47,7 +47,7 @@
 # dimension = data.frame(aw_get_dimensions()) #to get a list of available dimensions IDs.
 # metric = data.frame(aw_get_metrics())  #to get a list of available metrics IDs.
 # calculatedmetrics = data.frame(aw_get_calculatedmetrics()) #to get a list of available calculated metrics IDs.
-# segment = aw_get_segments() 
+# segment = aw_get_segments()
 
 ### - Setup Default Variable
 PW_start = '2023-05-01';
@@ -93,7 +93,7 @@ nCountries = 20; # VAULT >=20
 nRoute = 100; # VAULT >=100
 
 dimensions <- c("daterangeweek" , "prop17", "evar9", "evar101");
-metrics <- c("revenue", "visits", "event101");
+metrics <- c("revenue", "event101");
 top = c(nDateRange, nPrimaryCategory, nCountries, nRoute);
 search = c("", "MATCH 'Booking'", "NOT '0' AND NOT 'APP'", "(CONTAINS '-')");
 
@@ -127,11 +127,10 @@ df_join <- df_ff_pageView %>%
     Revenue = Revenue.y
         ) %>% 
   mutate(
-            Visits = formatC(Visits, big.mark=","),
             BCR = ifelse(select_flight > 0, Orders / select_flight, 0),
             AOV = ifelse(Orders > 0, round(Revenue / Orders,1), 0)
         ) %>% 
-  select(-c(Week.x,Week.y,primaryCategory.x, primaryCategory.y, Category, Visits, Orders, Revenue.x)) 
+  select(-c(Week.x,Week.y,primaryCategory.x, primaryCategory.y, Category, Orders, Revenue.x)) 
 
 df_pw <- df_join %>% 
     filter(Range == "PW") %>% 
@@ -156,20 +155,26 @@ df_cw <- df_join %>%
 df_join_wow <- df_cw %>% 
   left_join( df_pw, by=c('Country','Route')) %>% 
     mutate(
+      select_flight = formatC(select_flight_cw, big.mark=","),
+      revenue = Revenue_cw,
+      BCR = percent(BCR_cw, accuracy = 0.1),
+      AOV = AOV_cw,
       select_flight_delta = percent(ifelse(select_flight_cw > 0, (select_flight_cw - select_flight_pw) / select_flight_pw, 0), accuracy = 0.1),
-      Revenue_delta = percent(ifelse(Revenue_cw > 0, (Revenue_cw - Revenue_pw) / Revenue_pw, 0), accuracy = 0.1),
-      BCR_delta = (BCR_cw - BCR_pw)*100,
+      revenue_delta = percent(ifelse(Revenue_cw > 0, (Revenue_cw - Revenue_pw) / Revenue_pw, 0), accuracy = 0.1),
+      BCR_delta = round((BCR_cw - BCR_pw)*100,1),
       AOV_delta = AOV_cw - AOV_pw
     ) %>% 
-  select(-c(select_flight_pw, Revenue_pw, BCR_pw, AOV_pw)) 
+  select(-c(select_flight_cw,select_flight_pw, Revenue_cw, Revenue_pw, BCR_cw, BCR_pw, AOV_cw, AOV_pw)) 
+
+
 
 #Order & Extract
 df_export <- df_join_wow %>% 
  # select(c(Country, Revenue_cw, Route)) %>% 
-  arrange(desc(Country), desc(Revenue_cw), Route, by_group = TRUE) %>%
+  arrange(desc(Country), desc(revenue), Route, by_group = TRUE) %>%
   group_by(Country)  %>%
   slice(1:20) %>% 
-  arrange(desc(Country), desc(Revenue_cw), Route, by_group = TRUE)
+  arrange(desc(Country), desc(revenue), Route, by_group = TRUE)
 
   # group_by(Day) %>%
   # summarize(across(Revenue, sum), .groups = "drop_last")
@@ -177,5 +182,5 @@ df_export <- df_join_wow %>%
 ### - Load 
   
   write_xlsx(df_export, "C:/Users/rtadd/OneDrive/Desktop/R/1exported/df_export_.xlsx")
-  write.xlsx(ff_top10Countries_purchase, "C:/Users/rtadd/OneDrive/Desktop/R/1exported/ff_top10Countries_purchase.xlsx")
+  write_xlsx(ff_top10Countries_purchase, "C:/Users/rtadd/OneDrive/Desktop/R/1exported/ff_top10Countries_purchase.xlsx")
   
