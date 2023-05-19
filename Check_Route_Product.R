@@ -69,14 +69,10 @@ template <- function(df_date){
 }
 
 #Setup Variable
-PW_start = '2023-04-10';
+PW_start = '2023-05-01';
 
 CW_start = as.Date(PW_start , "%Y-%m-%d") + 7;
 CW_end = as.Date(PW_start , "%Y-%m-%d") + 13;
-
-df_date <- c(CW_start, CW_end);
-
-asd <- template(df_date)
 
 nDateRange = 1;
 nCategory = 1;
@@ -143,6 +139,8 @@ df_join <- ff_product %>%
     Orders_d = formatC(Orders_p-Orders_r, big.mark=",")
   ) %>% 
   filter(Orders_d == 0)
+
+### END
 
 df_ff_purchase = data.frame(ff_purchase) %>% 
 
