@@ -185,3 +185,51 @@ df_export <- df_join_wow %>%
 ### - Load 
   
   write_xlsx(df_export, "C:/Users/rtadd/OneDrive/Desktop/R/1exported/df_export_.xlsx")
+  
+  ##### Departure Brand
+  nCountries = 20; # VAULT >=20
+  nRoute = 100; # VAULT >=100
+  nDepMonth = 10;
+  
+  dimensions <- c("daterangeweek" , "prop17", "evar9", "evar101", "evar30");
+  metrics <- c("event101",  "cm4461_6336e44d7136c5051634396c");
+  top = c(nDateRange, nPrimaryCategory, nCountries, nRoute, nDepMonth);
+  search = c("", "MATCH 'Booking'", "NOT '0' AND NOT 'APP'", "(CONTAINS '-')","");
+  
+  date <- c(PW_start, PW_end);
+  ff_departureMonth_PW <- extract_df(date, dimensions, metrics, top, search);
+  
+  date <- c(CW_start, CW_end);
+  ff_departureMonth_CW <- extract_df(date, dimensions, metrics, top, search);
+  
+  ff_departureMonth_join <- ff_departureMonth_CW %>% 
+  left_join(ff_departureMonth_PW, by=c('Country','Route','Departure.Month'), suffix = c("_CW", "_PW")) %>%
+  mutate(
+    X008..BCR..Updated._delta = round((X008..BCR..Updated._CW - X008..BCR..Updated._PW)*100,1)
+  ) %>% 
+  group_by(Country, Route)  %>%
+  slice(1:3) %>% 
+  arrange(Country, Route, desc(XDM.e101...select.flight_CW)) %>% 
+  select(-c(Week_CW,Week_PW,primaryCategory_CW, primaryCategory_PW, XDM.e101...select.flight_CW, XDM.e101...select.flight_PW,X008..BCR..Updated._CW, X008..BCR..Updated._PW)) %>% 
+    pivot_wider(
+      names_from = Departure.Month, 
+      values_from = X008..BCR..Updated._delta,
+      #values_fill = "no top3 select flight"
+    ) %>% 
+   right_join(df_export, by=c('Country','Route')) %>% 
+   select(c('Country', 'Route', 'revenue', 'select_flight', 'BCR', 'AOV', 'revenue_delta', 'select_flight_delta', 'BCR_delta', 'AOV_delta', '5-2023', '6-2023', '7-2023', '8-2023', '9-2023'))
+  
+  write_xlsx(ff_departureMonth_join, "C:/Users/rtadd/OneDrive/Desktop/R/1exported/ff_departureMonth_join.xlsx")
+  
+  library(tidyverse)
+  
+  ff_departureMonth_CW_elab <- ff_departureMonth_CW %>%
+    select("Country","Route","Departure.Month","X008..BCR..Updated.") %>% 
+    pivot_wider(
+      names_from = Departure.Month, 
+      values_from = X008..BCR..Updated.,
+      values_fill = 0
+    ) %>% 
+    left_join(df_export, by=c('Country','Route'))
+
+  write_xlsx(ff_departureMonth_CW, "C:/Users/rtadd/OneDrive/Desktop/R/1exported/ff_departureMonth_CW.xlsx")
