@@ -55,55 +55,31 @@ aw_auth()
 ### - Setup Default Variable
 W_start = '2023-08-28';
 
-nDateRange = 4;
+nDateRange = 1;
 W_start = as.Date(W_start , "%Y-%m-%d");
 W_end = as.Date(W_start , "%Y-%m-%d") + ((nDateRange*7)-1);
-nCategory = 1;
-nPrimaryCategory = 1;
+
+nCategory = 3;
+nPrimaryCategory = 3;
 
 ### - E_xtract
 
 ## ff_top10Countries_purchase
-nCountries = 10;
+#nCountries = 10;
 
-date <- c(CW_start, CW_end);
+date <- c(W_start, W_end);
 dimensions <- c("daterangeweek","category","prop17", "evar9");
 metrics <- c("revenue", "orders");
-top = c(nDateRange, nCategory, nPrimaryCategory, nCountries);
-search = c("", "MATCH 'FlightTicket'", "MATCH 'Booking'", "NOT '0' AND NOT 'APP'");
+top = c(nDateRange, nCategory, nPrimaryCategory);
+search = c("", "", "MATCH 'Booking' OR 'Checkin' OR 'Rebooking'", "");
 
-ff_top10Countries_purchase <- extract_df(date, dimensions, metrics, top, search) %>% 
-  mutate(Country = tolower(Country));
+ff__purchase <- extract_df(date, dimensions, metrics, top, search) 
 
+metrics <- c("visits");
 
-
-
-
+ff__visit <- extract_df(date, dimensions, metrics, top, search) 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+write_xlsx(ff__purchase, "C:/Users/IT011820/OneDrive - ITA Italia Trasporto Aereo/Desktop/0. R/02_exported/W_purchase.xlsx")
+write_xlsx(ff__visit, "C:/Users/IT011820/OneDrive - ITA Italia Trasporto Aereo/Desktop/0. R/02_exported/W_visit.xlsx")
 
