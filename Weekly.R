@@ -35,6 +35,37 @@ extract_df <- function(date, dimensions, metrics, top, search){
   
 }
 
+printWeek <- function(lastSunday, nWeek){
+  
+  output ="";
+  
+  for (i in 1:nWeek){
+    
+    # if (i == 1){
+    #   eWeek = as.Date(lastSunday , "%Y-%m-%d");
+    # } else {
+    #   eWeek = as.Date(lastSunday , "%Y-%m-%d") - ((7*i)-2);
+    # }
+    
+    
+    eWeek = as.Date(lastSunday , "%Y-%m-%d") - (7*(i-1));
+    sWeek = as.Date(lastSunday , "%Y-%m-%d") - ((7*i)-1);
+
+    df <- data.frame(sWeek, eWeek, i) 
+    
+    output = rbind(output,df)
+    
+  }
+  
+  return(output)
+
+}
+
+a = printWeek('2023-10-01', 4)
+
+x =c(a[2,1], a[2,2])
+x
+
 ### - Login & Utilities
 
 #set_config(use_proxy("proxy.user.alitalia.local", port = 8080, username = "IT011820", password = "Agosto23", auth = "basic"))
@@ -47,8 +78,8 @@ aw_auth()
 ### Login OAUTH
 #aw_auth_with('oauth')
 
-# dimension = data.frame(aw_get_dimensions()) #to get a list of available dimensions IDs.
-# metric = data.frame(aw_get_metrics())  #to get a list of available metrics IDs.
+ dimension = data.frame(aw_get_dimensions()) #to get a list of available dimensions IDs.
+ metric = data.frame(aw_get_metrics())  #to get a list of available metrics IDs.
 # calculatedmetrics = data.frame(aw_get_calculatedmetrics()) #to get a list of available calculated metrics IDs.
 # segment = aw_get_segments()
 
@@ -68,6 +99,7 @@ nPrimaryCategory = 3;
 #nCountries = 10;
 
 date <- c(W_start, W_end);
+date <- x
 dimensions <- c("daterangeweek","category","prop17", "evar9");
 metrics <- c("revenue", "orders");
 top = c(nDateRange, nCategory, nPrimaryCategory);
