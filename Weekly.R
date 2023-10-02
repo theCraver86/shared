@@ -35,36 +35,26 @@ extract_df <- function(date, dimensions, metrics, top, search){
   
 }
 
-printWeek <- function(lastSunday, nWeek){
+
+extractMultipleWeek <- function(lastSunday, nWeek, dimensions, metrics, top, search){
   
-  output ="";
+  output = "";
   
   for (i in 1:nWeek){
-    
-    # if (i == 1){
-    #   eWeek = as.Date(lastSunday , "%Y-%m-%d");
-    # } else {
-    #   eWeek = as.Date(lastSunday , "%Y-%m-%d") - ((7*i)-2);
-    # }
-    
-    
-    eWeek = as.Date(lastSunday , "%Y-%m-%d") - (7*(i-1));
     sWeek = as.Date(lastSunday , "%Y-%m-%d") - ((7*i)-1);
+    eWeek = as.Date(lastSunday , "%Y-%m-%d") - (7*(i-1));
+    
+    date = c(sWeek, eWeek)
 
-    df <- data.frame(sWeek, eWeek, i) 
+    df <- extract_df(date, dimensions, metrics, top, search) %>% 
+      mutate(Range = sWeek)
     
     output = rbind(output,df)
     
   }
-  
+  output <- output %>% slice(-1)
   return(output)
-
 }
-
-a = printWeek('2023-10-01', 4)
-
-x =c(a[2,1], a[2,2])
-x
 
 ### - Login & Utilities
 
@@ -78,40 +68,31 @@ aw_auth()
 ### Login OAUTH
 #aw_auth_with('oauth')
 
- dimension = data.frame(aw_get_dimensions()) #to get a list of available dimensions IDs.
- metric = data.frame(aw_get_metrics())  #to get a list of available metrics IDs.
+# dimension = data.frame(aw_get_dimensions()) #to get a list of available dimensions IDs.
+# metric = data.frame(aw_get_metrics())  #to get a list of available metrics IDs.
 # calculatedmetrics = data.frame(aw_get_calculatedmetrics()) #to get a list of available calculated metrics IDs.
 # segment = aw_get_segments()
 
 ### - Setup Default Variable
-W_start = '2023-08-28';
 
-nDateRange = 1;
-W_start = as.Date(W_start , "%Y-%m-%d");
-W_end = as.Date(W_start , "%Y-%m-%d") + ((nDateRange*7)-1);
+
+### - E_xtract
+lastSunday = '2023-10-01';
+nWeek = 2;
 
 nCategory = 3;
 nPrimaryCategory = 3;
 
-### - E_xtract
-
-## ff_top10Countries_purchase
-#nCountries = 10;
-
-date <- c(W_start, W_end);
-date <- x
-dimensions <- c("daterangeweek","category","prop17", "evar9");
+dimensions <- c("category","prop17");
 metrics <- c("revenue", "orders");
-top = c(nDateRange, nCategory, nPrimaryCategory);
-search = c("", "", "MATCH 'Booking' OR 'Checkin' OR 'Rebooking'", "");
+top = c(nCategory, nPrimaryCategory);
+search = c("", "MATCH 'Booking' OR 'Checkin' OR 'Rebooking'");
 
-ff__purchase <- extract_df(date, dimensions, metrics, top, search) 
+ff__purchase <- extractMultipleWeek(lastSunday, nWeek, dimensions, metrics, top, search) 
 
 metrics <- c("visits");
 
-ff__visit <- extract_df(date, dimensions, metrics, top, search) 
-
+ff__visit <- extractMultipleWeek(lastSunday, nWeek, dimensions, metrics, top, search) 
 
 write_xlsx(ff__purchase, "C:/Users/IT011820/OneDrive - ITA Italia Trasporto Aereo/Desktop/0. R/02_exported/W_purchase.xlsx")
 write_xlsx(ff__visit, "C:/Users/IT011820/OneDrive - ITA Italia Trasporto Aereo/Desktop/0. R/02_exported/W_visit.xlsx")
-
