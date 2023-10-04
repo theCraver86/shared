@@ -11,7 +11,7 @@ library(httr)
 
 ### - Function
 
-extract_df <- function(date, dimensions, metrics, top, search){
+extract_df <- function(date, dimensions, metrics, top, segmentId, search){
   
   data.frame(
     aw_freeform_table(
@@ -23,7 +23,8 @@ extract_df <- function(date, dimensions, metrics, top, search){
       top = top,
       page = 0,
       filterType = "breakdown",
-      segmentId = NA,
+      #segmentId = NA,
+      segmentId = segmentId,
       metricSort = "desc",
       include_unspecified = FALSE,
       search = search,
@@ -35,7 +36,7 @@ extract_df <- function(date, dimensions, metrics, top, search){
   
 }
 
-extractMultipleWeek <- function(lastSunday, nWeek, dimensions, metrics, top, search){
+extractMultipleWeek <- function(lastSunday, nWeek, dimensions, metrics, top, segmentId, search){
   
   output = "";
   
@@ -57,7 +58,7 @@ extractMultipleWeek <- function(lastSunday, nWeek, dimensions, metrics, top, sea
 
 ### - Login & Utilities
 
-set_config(use_proxy("proxy.user.alitalia.local", port = 8080, username = "IT011820", password = "Agosto23", auth = "basic"))
+#set_config(use_proxy("proxy.user.alitalia.local", port = 8080, username = "IT011820", password = "Agosto23", auth = "basic"))
 
 # Login JWT
 aw_auth_with('jwt')
@@ -81,6 +82,7 @@ nPrimaryCategory = 3;
 dimensions <- c("category","prop17");
 metrics <- c("revenue", "orders");
 top = c(nCategory, nPrimaryCategory);
+segmentId = 's4461_6508400dd2394a478af89a12';
 search = c("", "MATCH 'Booking' OR 'Checkin' OR 'Rebooking'");
 
 ff__test <- extractMultipleWeek(lastSunday, nWeek, dimensions, metrics, top, search) 
