@@ -58,7 +58,7 @@ extractMultipleWeek <- function(lastSunday, nWeek, dimensions, metrics, top, seg
 
 ### - Login & Utilities
 
-#set_config(use_proxy("proxy.user.alitalia.local", port = 8080, username = "IT011820", password = "Agosto23", auth = "basic"))
+set_config(use_proxy("proxy.user.alitalia.local", port = 8080, username = "IT011820", password = "Novembre23", auth = "basic"))
 
 # Login JWT
 aw_auth_with('jwt')
@@ -73,19 +73,44 @@ aw_auth()
 
 
 ### - E_xtract
-segmentId = c('s4461_651d73ffbcbd9254fe0ddee0');
-lastSunday = '2023-10-01';
-nWeek = 12;
+#segmentId = c('s4461_651d73ffbcbd9254fe0ddee0');
+segmentId = NA;
+lastSunday = '2023-12-24';
+nWeek = 1;
+
+## - Overall
+
+#NOTE
+#cm4461_633fc91d19d98828d5df7e80 = 011. AOV
+#cm4461_6336e5ce7136c5051634396f = 013. VCR (Overall)
 
 dimensions <- c("daterangeweek");
-metrics <- c("visits");
+metrics <- c("visits","revenue", "orders","cm4461_633fc91d19d98828d5df7e80","cm4461_6336e5ce7136c5051634396f");
 top = c(nWeek);
 search = c("");
 
 ff__visit <- extractMultipleWeek(lastSunday, nWeek, dimensions, metrics, top, segmentId, search) %>% 
-  select(-c(Week))
+  mutate(
+    AOV = prettyNum(X011..AOV, digits = 3),
+    VCR = prettyNum(X013..VCR..Overall.)
+  ) %>% 
+  select(-c(Week,X011..AOV,X013..VCR..Overall.)) 
 
 write_xlsx(ff__visit, "C:/Users/IT011820/OneDrive - ITA Italia Trasporto Aereo/Desktop/0. R/02_exported/W_visit.xlsx")
+
+nCategory = 3;
+nPrimaryCategory = 3;
+
+dimensions <- c("category","prop17");
+metrics <- c("revenue", "orders");
+top = c(nCategory, nPrimaryCategory);
+search = c("", "MATCH 'Booking' OR 'Checkin' OR 'Rebooking'");
+
+ff__purchase <- extractMultipleWeek(lastSunday, nWeek, dimensions, metrics, top, segmentId, search)
+
+write_xlsx(ff__purchase, "C:/Users/IT011820/OneDrive - ITA Italia Trasporto Aereo/Desktop/0. R/02_exported/W_purchase.xlsx")
+
+## - by primaryCategory (prop17)
 
 dimensions <- c("daterangeweek","prop17");
 metrics <- c("visits");
@@ -96,19 +121,3 @@ ff__visit_pc <- extractMultipleWeek(lastSunday, nWeek, dimensions, metrics, top,
   select(-c(Week))
 
 write_xlsx(ff__visit_pc, "C:/Users/IT011820/OneDrive - ITA Italia Trasporto Aereo/Desktop/0. R/02_exported/W_visit_pc.xlsx")
-
-
-
-nCategory = 30;
-nPrimaryCategory = 3;
-
-dimensions <- c("category","prop17");
-metrics <- c("revenue", "orders");
-top = c(nCategory, nPrimaryCategory);
-search = c("", "MATCH 'Booking' OR 'Checkin' OR 'Rebooking'");
-
-
-ff__purchase <- extractMultipleWeek(lastSunday, nWeek, dimensions, metrics, top, segmentId, search) 
-
-write_xlsx(ff__purchase, "C:/Users/IT011820/OneDrive - ITA Italia Trasporto Aereo/Desktop/0. R/02_exported/W_purchase.xlsx")
-write_xlsx(ff__visit, "C:/Users/IT011820/OneDrive - ITA Italia Trasporto Aereo/Desktop/0. R/02_exported/W_visit.xlsx")
