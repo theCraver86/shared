@@ -63,7 +63,7 @@ extractMultipleDay <- function(firstDay, nDay, dimensions, metrics, top, segment
 
 ### - Login & Utilities
 #se dentro VPN: turn ON
-set_config(use_proxy("proxy.user.alitalia.local", port = 8080, username = "IT011820", password = "Novembre23", auth = "basic"))
+#set_config(use_proxy("proxy.user.alitalia.local", port = 8080, username = "IT011820", password = "Novembre23", auth = "basic"))
 
 # Login JWT
 aw_auth_with('jwt')
@@ -78,19 +78,24 @@ aw_auth()
 
 ### - E_xtract
 firstDay = '2023-12-25';
-nDay = 2;
+nDay = 4;
 dimensions <- c("daterangeday");
-metrics <- c("visits","cm4461_6336e5ce7136c5051634396f","cm4461_633fc91d19d98828d5df7e80","revenue");
+metrics <- c("visits","cm4461_641c20238ffe75048ad05192","event101","cm4461_6336e44d7136c5051634396c","cm4461_6336e5ce7136c5051634396f","cm4461_633fc91d19d98828d5df7e80","revenue");
 top = c(nDay);
-#segmentId = c('s4461_651d73ffbcbd9254fe0ddee0');
-segmentId = NA;
+segmentId = c('s4461_651d73ffbcbd9254fe0ddee0');
+#segmentId: Web Traffic - s4461_651d73ffbcbd9254fe0ddee0
+#segmentId: App Traffic - s4461_64771bc20788655ac137bcd6
+#segmentId = NA;
 search = c("");
 
 #Appunti metrics
+#cm4461_641c20238ffe75048ad05192 = 013. VCR (Booking)
 #cm4461_6336e5ce7136c5051634396f = 013. VCR (Overall)
 #cm4461_633fc91d19d98828d5df7e80 = 011. AOV
+#cm4461_6336e44d7136c5051634396c = 008. BCR [Updated]
 
-df_PRE <- extractMultipleDay(firstDay, nDay, dimensions, metrics, top, segmentId, search) %>% 
+
+df_pageView <- extractMultipleDay(firstDay, nDay, dimensions, metrics, top, segmentId, search) %>% 
   mutate(
     Period = "PRE",
     VCR = X013..VCR..Overall.,
@@ -99,12 +104,24 @@ df_PRE <- extractMultipleDay(firstDay, nDay, dimensions, metrics, top, segmentId
   mutate_at(c('Visits', "VCR", "AOV", 'Revenue'), as.numeric) %>% 
   select(-c(X013..VCR..Overall., X011..AOV)) %>% 
   relocate(Period, .after = Day)
-  
-write_xlsx(df_PRE, "C:/Users/IT011820/OneDrive - ITA Italia Trasporto Aereo/Desktop/0. R/02_exported/df_PRE.xlsx")
+
+write_xlsx(df_pageView, "C:/Users/rtadd/OneDrive/Desktop/R/1exported/df_pageView.xlsx")
+
+metrics <- c("orders");
+search = c("MATCH 'FlightTicket'");
+
+df_Purchase <- extractMultipleDay(firstDay, nDay, dimensions, metrics, top, segmentId, search) %>% 
+  mutate(
+    Period = "PRE",
+    VCR = X013..VCR..Overall.,
+    AOV = X011..AOV
+  ) %>% 
+  mutate_at(c('Visits', "VCR", "AOV", 'Revenue'), as.numeric) %>% 
+  select(-c(X013..VCR..Overall., X011..AOV)) %>% 
+  relocate(Period, .after = Day)
 
 
-
-
+write_xlsx(df_Purchase, "C:/Users/rtadd/OneDrive/Desktop/R/1exported/df_Purchase.xlsx")
 
 
 
