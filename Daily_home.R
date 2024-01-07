@@ -78,7 +78,7 @@ aw_auth()
 
 ### - E_xtract
 firstDay = '2023-12-25';
-nDay = 1;
+nDay = 4;
 dimensions <- c("daterangeday");
 metrics <- c("visits","cm4461_641c20238ffe75048ad05192","event101","cm4461_6336e44d7136c5051634396c");
 top = c(nDay);
@@ -95,21 +95,18 @@ search = c("");
 #cm4461_6336e5ce7136c5051634396f = 013. VCR (Overall)
 #cm4461_633fc91d19d98828d5df7e80 = 011. AOV
 
-
-
 df_pageView <- extractMultipleDay(firstDay, nDay, dimensions, metrics, top, segmentId, search) %>% 
   mutate(
     Period = "PRE",
     VCR_tkts = X013..VCR..Booking.,
-    select_flight = XDM.e101...select.flight,
+    Select_flight = XDM.e101...select.flight,
     BCR_tkts = X008..BCR..Updated.
     ) %>% 
-  mutate_at(c('Visits', "VCR_tkts", "select_flight", 'BCR_tkts'), as.numeric) %>% 
+  mutate_at(c('Visits', "VCR_tkts", "Select_flight", 'BCR_tkts'), as.numeric) %>% 
   select(-c(X013..VCR..Booking., XDM.e101...select.flight, X008..BCR..Updated.)) %>% 
   relocate(Period, .after = Day)
 
 write_xlsx(df_pageView, "C:/Users/rtadd/OneDrive/Desktop/R/1exported/df_pageView.xlsx")
-
 
 metrics <- c("orders","revenue");
 dimensions <- c("daterangeday","category");
@@ -126,58 +123,19 @@ df_purchase <- extractMultipleDay(firstDay, nDay, dimensions, metrics, top, segm
 write_xlsx(df_purchase, "C:/Users/rtadd/OneDrive/Desktop/R/1exported/df_purchase.xlsx");
 
 df_orders <- df_purchase %>% 
+  filter(Category %in% 'FlightTicket') %>% 
+  select(-c(Category)) %>% 
+  rename(Rev_tkts = Revenue) %>% 
+  left_join(df_pageView, by=c('Day','Period'))
 
-write_xlsx(df_orders, "C:/Users/rtadd/OneDrive/Desktop/R/1exported/df_orders.xlsx")
+df_revenue <- df_purchase %>% 
+  filter(Category != "FlightTicket") %>%
+  group_by(Day, Period) %>% 
+  summarise(Rev_anc = sum(Revenue)) %>% 
+  left_join(df_orders, by=c('Day','Period'))
 
+df_output <- df_revenue
 
-df_output = rbind(df_pageView,df_orders,df_purchase);
+write_xlsx(df_output, "C:/Users/rtadd/OneDrive/Desktop/R/1exported/df_output.xlsx")
 
-write_xlsx(df_output, "C:/Users/rtadd/OneDrive/Desktop/R/1exported/df_output.xlsx");
-
-
-
-
-
-
-
-
-
-df_PRE_2 <- df_PRE %>% 
-  mutate(Period = "PRE") %>% 
-  relocate(Period, .after = Day) %>% 
-  mutate_at(c('Visits', 'Revenue'), as.numeric)
-
-write_xlsx(df_PRE_2, "C:/Users/IT011820/OneDrive - ITA Italia Trasporto Aereo/Desktop/0. R/02_exported/df_PRE_2.xlsx")
-
-
-ff__visit <- extractMultipleWeek(lastSunday, nWeek, dimensions, metrics, top, segmentId, search) %>% 
-  mutate(
-    AOV = prettyNum(X011..AOV, digits = 3),
-    VCR = prettyNum(X013..VCR..Overall.)
-  ) %>% 
-  select(-c(Week,X011..AOV,X013..VCR..Overall.)) 
-
-
-nCategory = 3;
-nPrimaryCategory = 3;
-
-dimensions <- c("category","prop17");
-metrics <- c("revenue", "orders");
-top = c(nCategory, nPrimaryCategory);
-search = c("", "MATCH 'Booking' OR 'Checkin' OR 'Rebooking'");
-
-ff__purchase <- extractMultipleWeek(lastSunday, nWeek, dimensions, metrics, top, segmentId, search)
-
-write_xlsx(ff__purchase, "C:/Users/IT011820/OneDrive - ITA Italia Trasporto Aereo/Desktop/0. R/02_exported/W_purchase.xlsx")
-
-## - by primaryCategory (prop17)
-
-dimensions <- c("daterangeweek","prop17");
-metrics <- c("visits");
-top = c(nWeek);
-search = c("", "MATCH 'Booking' OR 'Checkin' OR 'Rebooking'");
-
-ff__visit_pc <- extractMultipleWeek(lastSunday, nWeek, dimensions, metrics, top, segmentId, search) %>% 
-  select(-c(Week))
-
-write_xlsx(ff__visit_pc, "C:/Users/IT011820/OneDrive - ITA Italia Trasporto Aereo/Desktop/0. R/02_exported/W_visit_pc.xlsx")
+#write_xlsx(df_output, "C:/Users/IT011820/OneDrive - ITA Italia Trasporto Aereo/Desktop/0. R/02_exported/df_output.xlsx")
