@@ -2,6 +2,8 @@
 
 library(adobeanalyticsr)
 library(dplyr)
+library(lubridate)
+
 library(cleaner) #Unistall?
 library(gt)
 library(writexl)
@@ -114,10 +116,11 @@ extractDaily <- function(period, firstDay, nDay, segmentId){
 
 ### - Login & Utilities
 #se dentro VPN: turn ON
-#set_config(use_proxy("proxy.user.alitalia.local", port = 8080, username = "IT011820", password = "Novembre23", auth = "basic"))
+set_config(use_proxy("proxy.user.alitalia.local", port = 8080, username = "IT011820", password = "Novembre23", auth = "basic"))
 
 # Login JWT
 aw_auth_with('jwt')
+#aw_auth_with('oauth')
 aw_auth()
 
 # dimension = data.frame(aw_get_dimensions()) #to get a list of available dimensions IDs.
@@ -129,22 +132,87 @@ aw_auth()
 
 ### - E_xtract
 
-nDay = 4
-firstDay = '2023-12-25'
+#### PW
+
+nDay = 2
+firstDay = '2024-01-08'
 
 df_preWeb <- extractDaily('PRE_WEB', firstDay, nDay, 's4461_651d73ffbcbd9254fe0ddee0')
 
 df_preApp <- extractDaily('PRE_APP', firstDay, nDay, 's4461_64771bc20788655ac137bcd6')
 
-firstDay = '2024-01-01'
+dimensions <- c("daterangeday","evar107","prop13");
+metrics <- c("revenue");
+nNetwork = 3;
+nPathname = 1;
+top = c(nDay, nNetwork, nPathname);
+segmentId = NA;
+search = c("","NOT '0'","MATCH '/booking/confirmation'");
+
+df_preNetwork <- extractMultipleDay(firstDay, nDay, dimensions, metrics, top, segmentId, search) %>% 
+  mutate(
+    Period = "PRE_all_Network"
+  ) %>% 
+  mutate_at(c('Revenue'), as.numeric) %>% 
+  relocate(Period, .after = Day) %>% 
+  select(-c(Pathname)) 
+
+dimensions <- c("daterangeday","evar107","prop13", "evar9");
+nCountry = 1;
+top = c(nDay, nNetwork, nPathname,nCountry);
+search = c("","NOT '0'","MATCH '/booking/confirmation'", "MATCH 'it'");
+
+df_preNetwork_it <- extractMultipleDay(firstDay, nDay, dimensions, metrics, top, segmentId, search) %>% 
+  mutate(
+    Period = "PRE_it_Network"
+  ) %>% 
+  mutate_at(c('Revenue'), as.numeric) %>% 
+  relocate(Period, .after = Day) %>% 
+  select(-c(Pathname, Country)) 
+
+#### CW
+
+firstDay = as.character((ymd(firstDay)+7))
 
 df_postWeb <- extractDaily('POST_WEB', firstDay, nDay, 's4461_651d73ffbcbd9254fe0ddee0')
 
 df_postApp <- extractDaily('POST_APP', firstDay, nDay, 's4461_64771bc20788655ac137bcd6')
 
-
 df_output = rbind(df_preWeb, df_postWeb, df_preApp, df_postApp)
 
-write_xlsx(df_output, "C:/Users/rtadd/OneDrive/Desktop/R/1exported/df_output.xlsx")
+#write_xlsx(df_output, "C:/Users/rtadd/OneDrive/Desktop/R/1exported/df_output.xlsx")
 
-#write_xlsx(df_output, "C:/Users/IT011820/OneDrive - ITA Italia Trasporto Aereo/Desktop/0. R/02_exported/df_output.xlsx")
+write_xlsx(df_output, "C:/Users/IT011820/OneDrive - ITA Italia Trasporto Aereo/Desktop/0. R/02_exported/df_output.xlsx")
+
+dimensions <- c("daterangeday","evar107","prop13");
+metrics <- c("revenue");
+nNetwork = 3;
+nPathname = 1;
+top = c(nDay, nNetwork, nPathname);
+segmentId = NA;
+search = c("","NOT '0'","MATCH '/booking/confirmation'");
+
+df_postNetwork <- extractMultipleDay(firstDay, nDay, dimensions, metrics, top, segmentId, search) %>% 
+  mutate(
+    Period = "POST_all_Network"
+  ) %>% 
+  mutate_at(c('Revenue'), as.numeric) %>% 
+  relocate(Period, .after = Day) %>% 
+  select(-c(Pathname)) 
+
+dimensions <- c("daterangeday","evar107","prop13", "evar9");
+nCountry = 1;
+top = c(nDay, nNetwork, nPathname,nCountry);
+search = c("","NOT '0'","MATCH '/booking/confirmation'", "MATCH 'it'");
+
+df_postNetwork_it <- extractMultipleDay(firstDay, nDay, dimensions, metrics, top, segmentId, search) %>% 
+  mutate(
+    Period = "POST_it_Network"
+  ) %>% 
+  mutate_at(c('Revenue'), as.numeric) %>% 
+  relocate(Period, .after = Day) %>% 
+  select(-c(Pathname, Country)) 
+
+df_output_network = rbind(df_preNetwork, df_preNetwork_it, df_postNetwork, df_postNetwork_it)
+
+write_xlsx(df_output_network, "C:/Users/IT011820/OneDrive - ITA Italia Trasporto Aereo/Desktop/0. R/02_exported/df_output_network.xlsx")
