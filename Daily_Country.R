@@ -69,149 +69,92 @@ extractDailyCountry <- function(period, firstDay, nDay, segmentId){
   #segmentId = c(segmentId);
   segmentId = NA;
   
+  ##DF_PURCHASE
+  dimensions <- c("daterangeday","prop13", "evar9");
+  metrics <- c("revenue","orders");
+  nPathname = 1;
+  nCountry = 50;
+  top = c(nDay, nPathname, nCountry);
+  search = c("", "MATCH '/booking/confirmation'", "");
+  
+  df_purchase <- extractMultipleDay(firstDay, nDay, dimensions, metrics, top, segmentId, search) %>%
+    mutate(
+      Country = tolower(Country),
+      Period = period
+    ) %>%
+    mutate_at(c('Orders','Revenue'), as.numeric) %>%
+    select(-c(Pathname)) %>% 
+    relocate(Period, .after = Day)
+
   ##DF_PAGEVIEW
   dimensions <- c("daterangeday", "evar9");
   metrics <- c("visits","cm4461_641c20238ffe75048ad05192","event101","cm4461_6336e44d7136c5051634396c");
-  nCountry = 30;
   top = c(nDay, nCountry);
-  search = c("", "NOT '0'");
+  search = c("", "");
   
   df_pageView <- extractMultipleDay(firstDay, nDay, dimensions, metrics, top, segmentId, search) %>% 
     mutate(
       Period = period,
       VCR_tkts = X013..VCR..Booking.,
       Select_flight = XDM.e101...select.flight,
-      BCR_tkts = X008..BCR..Updated.
+      BCR_tkts = X008..BCR..Updated.,
+      Country = tolower(Country)
     ) %>% 
     mutate_at(c('Visits', "VCR_tkts", "Select_flight", 'BCR_tkts'), as.numeric) %>% 
     select(-c(X013..VCR..Booking., XDM.e101...select.flight, X008..BCR..Updated.)) %>% 
     relocate(Period, .after = Day)
-
-  ##DF_PURCHASE
-  dimensions <- c("daterangeday","prop13", "evar9");
-  metrics <- c("orders","revenue");
-  nPathname = 1;
-  top = c(nDay, nPathname, nCountry);
-  search = c("","MATCH '/booking/confirmation'", "NOT '0'");
-
-  df_purchase <- extractMultipleDay(firstDay, nDay, dimensions, metrics, top, segmentId, search) %>%
-    mutate(
-      Period = period
-    ) %>%
-    mutate_at(c('Orders','Revenue'), as.numeric) %>%
-    relocate(Period, .after = Day)
-
-  df_orders <- df_purchase %>%
-    select(-c(Pathname)) %>%
-    left_join(df_pageView, by=c('Day', 'Period', 'Country'))
+  
+  df_output_country <-  df_purchase %>% 
+  left_join(df_pageView, by=c('Day', 'Period','Country'))
+  
 }
+
 
 ### - Login & Utilities
 #se dentro VPN: turn ON
 #set_config(use_proxy("proxy.user.alitalia.local", port = 8080, username = "IT011820", password = "Novembre23", auth = "basic"))
 
+
 # Login JWT
 aw_auth_with('jwt')
-#aw_auth_with('oauth')
 aw_auth()
 
-# dimension = data.frame(aw_get_dimensions()) #to get a list of available dimensions IDs.
-# metric = data.frame(aw_get_metrics())  #to get a list of available metrics IDs.
-# calculatedmetrics = data.frame(aw_get_calculatedmetrics()) #to get a list of available calculated metrics IDs.
-# segment = data.frame(aw_get_segments(limit = 1000))
-
-### - Setup Default Variable
-
-### - E_xtract
-
-#### PW
-
-nDay = 2
+nDay = 3
 firstDay = '2024-01-01'
 
-df <- extractDailyCountry('period', firstDay, nDay, 'NAbyDefaultForThisFunction')
+df_dailyCountryPre <- extractDailyCountry("pre", firstDay, nDay, 'NAbyDefaultForThisFunction')
 
-df_test <- df %>% 
+firstDay = as.character((ymd(firstDay) + 7))
+  
+df_dailyCountryPost <- extractDailyCountry("post", firstDay, nDay, 'NAbyDefaultForThisFunction')
+
+nPathname = 1;
+nCountry = 50;
+segmentId = NA;
+dimensions <- c("daterangeday","prop13", "evar9");
+metrics <- c("revenue");
+top = c(nDay, nPathname, nCountry);
+search = c("", "MATCH '/booking/confirmation'", "");
+
+df_revenue_sort <- extractMultipleDay(firstDay, nDay, dimensions, metrics, top, segmentId, search) %>% 
+  mutate(
+    Country = tolower(Country),
+  ) %>% 
+  mutate_at(c('Revenue'), as.numeric) %>% 
   group_by(Country) %>% 
-  summarise(Revenue = sum(Revenue)) %>% 
-  arrange(desc(Revenue))
+  summarise(Rev_tot = sum(Revenue)) %>% 
+  arrange(desc(Rev_tot)) 
 
-df_preWeb <- extractDaily('PRE_WEB', firstDay, nDay, 's4461_651d73ffbcbd9254fe0ddee0')
+df_dailyCountryPre_Sort <-  df_dailyCountryPre %>% 
+  left_join(df_revenue_sort, by=c('Country')) %>% 
+  group_by(Day) %>% 
+  arrange(desc(Rev_tot) , .by_group=TRUE)
 
-df_preApp <- extractDaily('PRE_APP', firstDay, nDay, 's4461_64771bc20788655ac137bcd6')
+df_dailyCountryPost_Sort <-  df_dailyCountryPost %>% 
+  left_join(df_revenue_sort, by=c('Country')) %>% 
+  group_by(Day) %>% 
+  arrange(desc(Rev_tot) , .by_group=TRUE)
 
-dimensions <- c("daterangeday","evar107","prop13");
-metrics <- c("revenue");
-nNetwork = 3;
-nPathname = 1;
-top = c(nDay, nNetwork, nPathname);
-segmentId = NA;
-search = c("","NOT '0'","MATCH '/booking/confirmation'");
+df_output_country = rbind(df_dailyCountryPre_Sort, df_dailyCountryPost_Sort)
 
-df_preNetwork <- extractMultipleDay(firstDay, nDay, dimensions, metrics, top, segmentId, search) %>% 
-  mutate(
-    Period = "PRE_all_Network"
-  ) %>% 
-  mutate_at(c('Revenue'), as.numeric) %>% 
-  relocate(Period, .after = Day) %>% 
-  select(-c(Pathname)) 
-
-dimensions <- c("daterangeday","evar107","prop13", "evar9");
-nCountry = 1;
-top = c(nDay, nNetwork, nPathname,nCountry);
-search = c("","NOT '0'","MATCH '/booking/confirmation'", "MATCH 'it'");
-
-df_preNetwork_it <- extractMultipleDay(firstDay, nDay, dimensions, metrics, top, segmentId, search) %>% 
-  mutate(
-    Period = "PRE_it_Network"
-  ) %>% 
-  mutate_at(c('Revenue'), as.numeric) %>% 
-  relocate(Period, .after = Day) %>% 
-  select(-c(Pathname, Country)) 
-
-#### CW
-
-firstDay = as.character((ymd(firstDay)+7))
-
-df_postWeb <- extractDaily('POST_WEB', firstDay, nDay, 's4461_651d73ffbcbd9254fe0ddee0')
-
-df_postApp <- extractDaily('POST_APP', firstDay, nDay, 's4461_64771bc20788655ac137bcd6')
-
-df_output = rbind(df_preWeb, df_postWeb, df_preApp, df_postApp)
-
-#write_xlsx(df_output, "C:/Users/rtadd/OneDrive/Desktop/R/1exported/df_output.xlsx")
-
-write_xlsx(df_output, "C:/Users/IT011820/OneDrive - ITA Italia Trasporto Aereo/Desktop/0. R/02_exported/df_output.xlsx")
-
-dimensions <- c("daterangeday","evar107","prop13");
-metrics <- c("revenue");
-nNetwork = 3;
-nPathname = 1;
-top = c(nDay, nNetwork, nPathname);
-segmentId = NA;
-search = c("","NOT '0'","MATCH '/booking/confirmation'");
-
-df_postNetwork <- extractMultipleDay(firstDay, nDay, dimensions, metrics, top, segmentId, search) %>% 
-  mutate(
-    Period = "POST_all_Network"
-  ) %>% 
-  mutate_at(c('Revenue'), as.numeric) %>% 
-  relocate(Period, .after = Day) %>% 
-  select(-c(Pathname)) 
-
-dimensions <- c("daterangeday","evar107","prop13", "evar9");
-nCountry = 1;
-top = c(nDay, nNetwork, nPathname,nCountry);
-search = c("","NOT '0'","MATCH '/booking/confirmation'", "MATCH 'it'");
-
-df_postNetwork_it <- extractMultipleDay(firstDay, nDay, dimensions, metrics, top, segmentId, search) %>% 
-  mutate(
-    Period = "POST_it_Network"
-  ) %>% 
-  mutate_at(c('Revenue'), as.numeric) %>% 
-  relocate(Period, .after = Day) %>% 
-  select(-c(Pathname, Country)) 
-
-df_output_network = rbind(df_preNetwork, df_preNetwork_it, df_postNetwork, df_postNetwork_it)
-
-write_xlsx(df_output_network, "C:/Users/IT011820/OneDrive - ITA Italia Trasporto Aereo/Desktop/0. R/02_exported/df_output_network.xlsx")
+write_xlsx(df_output_country, "C:/Users/IT011820/OneDrive - ITA Italia Trasporto Aereo/Desktop/0. R/02_exported/df_output_country.xlsx")
