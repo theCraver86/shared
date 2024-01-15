@@ -12,7 +12,6 @@ library(tidyverse)
 library(httr)
 library(data.table) #Unistall?
 
-
 ### - Function
 
 extract_df <- function(date, dimensions, metrics, top, segmentId, search){
@@ -134,7 +133,8 @@ aw_auth()
 
 #### PW
 
-nDay = 2
+#ADD information to set n Day in maniera dinamica
+nDay = 1
 firstDay = '2024-01-08'
 
 df_preWeb <- extractDaily('PRE_WEB', firstDay, nDay, 's4461_651d73ffbcbd9254fe0ddee0')
