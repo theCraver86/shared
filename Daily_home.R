@@ -134,8 +134,10 @@ aw_auth()
 #### PW
 
 #ADD information to set n Day in maniera dinamica
-nDay = 1
+
+
 firstDay = '2024-01-08'
+nDay = wday(Sys.Date())-1
 
 df_preWeb <- extractDaily('PRE_WEB', firstDay, nDay, 's4461_651d73ffbcbd9254fe0ddee0')
 

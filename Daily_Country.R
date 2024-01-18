@@ -1,8 +1,12 @@
 ### - Load Library
 
+#library(pivottabler)
+
 library(adobeanalyticsr)
 library(dplyr)
 library(lubridate)
+#library(Tplyr) #Unistall? Y
+
 
 library(cleaner) #Unistall?
 library(gt)
@@ -69,13 +73,19 @@ extractDailyCountry <- function(period, firstDay, nDay, segmentId){
   #segmentId = c(segmentId);
   segmentId = NA;
   
+  # period = "period";
+  # firstDay = '2024-01-01'
+  # nDay = 1;
+  # segmentId = NA;
+  
   ##DF_PURCHASE
-  dimensions <- c("daterangeday","prop13", "evar9");
+  dimensions <- c("daterangeday","prop13", "evar9","category");
   metrics <- c("revenue","orders");
   nPathname = 1;
   nCountry = 50;
-  top = c(nDay, nPathname, nCountry);
-  search = c("", "MATCH '/booking/confirmation'", "");
+  nCategory = 3;
+  top = c(nDay, nPathname, nCountry, nCategory);
+  search = c("", "MATCH '/booking/confirmation'", "", "");
   
   df_purchase <- extractMultipleDay(firstDay, nDay, dimensions, metrics, top, segmentId, search) %>%
     mutate(
@@ -83,9 +93,9 @@ extractDailyCountry <- function(period, firstDay, nDay, segmentId){
       Period = period
     ) %>%
     mutate_at(c('Orders','Revenue'), as.numeric) %>%
-    select(-c(Pathname)) %>% 
+    #select(-c(Pathname)) %>% 
     relocate(Period, .after = Day)
-
+  
   ##DF_PAGEVIEW
   dimensions <- c("daterangeday", "evar9");
   metrics <- c("visits","cm4461_641c20238ffe75048ad05192","event101","cm4461_6336e44d7136c5051634396c");
@@ -102,10 +112,27 @@ extractDailyCountry <- function(period, firstDay, nDay, segmentId){
     ) %>% 
     mutate_at(c('Visits', "VCR_tkts", "Select_flight", 'BCR_tkts'), as.numeric) %>% 
     select(-c(X013..VCR..Booking., XDM.e101...select.flight, X008..BCR..Updated.)) %>% 
-    relocate(Period, .after = Day)
+    relocate(Period, .after = Day)  
   
-  df_output_country <-  df_purchase %>% 
-  left_join(df_pageView, by=c('Day', 'Period','Country'))
+  df_orders <- df_purchase %>% 
+    filter(Category %in% 'FlightTicket') %>% 
+    select(-c(Category, Pathname)) %>% 
+    rename(Rev_tkts = Revenue) %>% 
+    left_join(df_pageView, by=c('Day', 'Period','Country'))
+  
+  df_revenue <- df_purchase %>% 
+    filter(Category != "FlightTicket") %>%
+    group_by(Day, Period, Country) %>% 
+    summarise(Rev_anc = sum(Revenue)) %>% 
+    right_join(df_orders, by=c('Day', 'Period','Country')) %>% 
+    mutate(
+      Rev_anc = replace_na(Rev_anc, 0),
+      Rev_tkts = replace_na(Rev_tkts, 0),
+      Rev_totByDay = Rev_anc + Rev_tkts,
+      Country = toupper(Country)
+    )
+    
+  df_output_country <-  df_revenue
   
 }
 
@@ -119,8 +146,9 @@ extractDailyCountry <- function(period, firstDay, nDay, segmentId){
 aw_auth_with('jwt')
 aw_auth()
 
-nDay = 3
-firstDay = '2024-01-01'
+
+firstDay = '2024-01-08'
+nDay = wday(Sys.Date())-1
 
 df_dailyCountryPre <- extractDailyCountry("pre", firstDay, nDay, 'NAbyDefaultForThisFunction')
 
@@ -138,7 +166,7 @@ search = c("", "MATCH '/booking/confirmation'", "");
 
 df_revenue_sort <- extractMultipleDay(firstDay, nDay, dimensions, metrics, top, segmentId, search) %>% 
   mutate(
-    Country = tolower(Country),
+    Country = toupper(Country),
   ) %>% 
   mutate_at(c('Revenue'), as.numeric) %>% 
   group_by(Country) %>% 
@@ -146,14 +174,16 @@ df_revenue_sort <- extractMultipleDay(firstDay, nDay, dimensions, metrics, top, 
   arrange(desc(Rev_tot)) 
 
 df_dailyCountryPre_Sort <-  df_dailyCountryPre %>% 
+  mutate(Country = toupper(Country)) %>% 
   left_join(df_revenue_sort, by=c('Country')) %>% 
   group_by(Day) %>% 
   arrange(desc(Rev_tot) , .by_group=TRUE)
 
 df_dailyCountryPost_Sort <-  df_dailyCountryPost %>% 
+  mutate(Country = toupper(Country)) %>% 
   left_join(df_revenue_sort, by=c('Country')) %>% 
   group_by(Day) %>% 
-  arrange(desc(Rev_tot) , .by_group=TRUE)
+  arrange(desc(Rev_tot) , .by_group=TRUE) 
 
 df_output_country = rbind(df_dailyCountryPre_Sort, df_dailyCountryPost_Sort)
 
