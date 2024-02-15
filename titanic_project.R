@@ -1,8 +1,10 @@
 #install.packages("rio")
-#install.packages("ggplot2")
+#install.packages("neuralnet")
 library(rio)
 library(dplyr)
 library(ggplot2)
+library(writexl)
+library(neuralnet)
 
 #install_formats()
 
@@ -21,24 +23,44 @@ train_numeric <- train %>%
       Embarked == "S" ~ 3
     ) 
   ) %>% 
+  mutate(Age =ifelse(is.na(Age) == TRUE, mean(Age, na.rm = TRUE), Age)) %>%  
+  mutate(Embarked_reco = ifelse(is.na(Embarked_reco) == TRUE, 3, Embarked_reco)) %>% 
   select(-c(Name, Sex, Embarked, Cabin, Ticket))
 
-clean_Age <- train_numeric %>% 
-  select(c(PassengerId, Age)) %>% 
-  filter(!is.na(Age))
+res <- cor(train_numeric) 
+res <- round(res, 2)
 
-ggplot(data = clean_Age, aes(x = PassengerId, y = Age)) +  geom_point() 
+nn <- neuralnet(Survived == 1 ~ Age + Sex_reco + Pclass, train_numeric, linear.output = FALSE)
+print(nn)
+plot(nn)
 
-ggplot(data = clean_Age, aes(Age)) + geom_density(kernel = "gaussian") 
+model <- lm(Survived ~ Age + Sex_reco + Pclass, data = train_numeric)
+summary(model)
+summary(model)$coefficients
 
-quantile(clean_Age$Age, probs = 0.25)
-
-
-sum(is.na(train_numeric$Age))
-sum(is.na(train_numeric$Embarked_reco))
+log_model <- glm(Survived ~ Age + Sex_reco + Pclass + SibSp + Parch + Fare + Embarked_reco, data = train_numeric, family = "binomial")
+summary(log_model)
+summary(log_model)$coefficients
 
 
 str(train_numeric)
 
-res <- cor(train_numeric) 
-round(res, 2)
+### PAINT
+clean_Age <- train_numeric %>% 
+  select(c(PassengerId, Age)) %>% 
+  mutate(Age =ifelse(is.na(Age) == TRUE, mean(Age, na.rm = TRUE), Age))
+
+ggplot(data = clean_Age, aes(x = PassengerId, y = Age)) +  geom_point() 
+ggplot(data = clean_Age, aes(Age)) + geom_density(kernel = "gaussian") 
+
+### EXPERIMENT
+quantile(clean_Age$Age, probs = 0.25)
+sum(is.na(train_numeric$Age))
+table(train$Embarked)
+
+### EXPORT
+
+out = data.frame(res);
+
+write_xlsx(out, "C:/Users/rtadd/OneDrive/Desktop/R/3titanic/0_export/out.xlsx")
+
