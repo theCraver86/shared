@@ -54,7 +54,7 @@ aw_auth()
 # segment = aw_get_segments()
 
 ### - Setup Default Variable
-PW_start = '2024-04-22';
+PW_start = '2024-04-29';
 
 PW_start = as.Date(PW_start , "%Y-%m-%d");
 PW_end = as.Date(PW_start , "%Y-%m-%d") + 6;
@@ -234,7 +234,7 @@ ff_departureMonth_slice <- ff_departureMonth_join_slice %>%
     #values_fill = "no top3 select flight"
   ) %>% 
   right_join(df_export, by=c('Country','Route')) %>% 
-  select(c('Country', 'Route', 'revenue', 'select_flight', 'BCR', 'AOV', 'revenue_delta', 'select_flight_delta', 'BCR_delta', 'AOV_delta', '5-2024', '6-2024', '7-2024', '8-2024', '9-2024', '10-2024', '11-2024', '12-2024'))
+  select(c('Country', 'Route', 'Revenue_cw', 'select_flight_cw', 'BCR_cw', 'AOV_cw', 'revenue_delta', 'select_flight_delta', 'BCR_delta', 'AOV_delta', '5-2024', '6-2024', '7-2024', '8-2024', '9-2024', '10-2024', '11-2024', '12-2024'))
 
 
 write_xlsx(ff_departureMonth_slice, "C:/Users/IT011820/OneDrive - ITA Italia Trasporto Aereo/Desktop/0. R/02_exported/ff_departureMonth_slice.xlsx")
@@ -264,6 +264,6 @@ ff_departureMonth_full <- ff_departureMonth_join_full %>%
     #values_fill = "no top3 select flight"
   ) %>% 
   right_join(df_export, by=c('Country','Route')) %>% 
-  select(c('Country', 'Route', 'revenue', 'select_flight', 'BCR', 'AOV', 'revenue_delta', 'select_flight_delta', 'BCR_delta', 'AOV_delta', '5-2024', '6-2024', '7-2024', '8-2024','9-2024','10-2024','11-2024','12-2024'))
+  select(c('Country', 'Route', 'Revenue_cw', 'select_flight_cw', 'BCR_cw', 'AOV_cw', 'revenue_delta', 'select_flight_delta', 'BCR_delta', 'AOV_delta', '5-2024', '6-2024', '7-2024', '8-2024','9-2024','10-2024','11-2024','12-2024'))
 
 write_xlsx(ff_departureMonth_full, "C:/Users/IT011820/OneDrive - ITA Italia Trasporto Aereo/Desktop/0. R/02_exported/ff_departureMonth_full.xlsx")

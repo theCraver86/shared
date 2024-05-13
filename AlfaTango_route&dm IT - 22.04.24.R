@@ -54,7 +54,7 @@ aw_auth()
 
 ### - Setup Default Variable
 
- PW_start = '2024-04-22';
+ PW_start = '2024-04-29';
  
  PW_start = as.Date(PW_start , "%Y-%m-%d");
  PW_end = as.Date(PW_start , "%Y-%m-%d") + 6;
@@ -166,10 +166,11 @@ df_join_wow <- df_cw %>%
 
 df_export <- df_join_wow %>%
   left_join(ff_purchase_CW_totByRete, by=c('Rete')) %>%
-  group_by(Rete) %>% 
-  slice(1:50) %>%
   arrange(desc(totByRete_Revenue), desc(Revenue_cw)) %>% 
-  select(-c(totByRete_Revenue)) %>%
+  group_by(Rete) %>% 
+  slice(1:30) %>%
+  arrange(desc(totByRete_Revenue), desc(Revenue_cw)) %>%
+#  select(-c(totByRete_Revenue)) %>%
   select(c('Country','Rete','Route','Revenue_pw','select_flight_pw','Units_pw','BCR_pw','AOV_pw','Revenue_cw','select_flight_cw','Units_cw','BCR_cw','AOV_cw','revenue_delta','select_flight_delta','units_delta','BCR_delta','AOV_delta'))
 
 ### - Load 

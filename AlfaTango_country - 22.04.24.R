@@ -52,7 +52,7 @@
 # segment = aw_get_segments()
 
 ### - Setup Default Variable
-PW_start = '2024-04-22';
+PW_start = '2024-04-29';
 
 PW_start = as.Date(PW_start , "%Y-%m-%d");
 PW_end = as.Date(PW_start , "%Y-%m-%d") + 6;
