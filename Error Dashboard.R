@@ -83,18 +83,18 @@ aw_auth()
 segmentId = NA #c(segmentId);
 
 firstDay = '2024-05-27';
-nDay = 10;
-nDAPI = 12;
+nDay = 1;
+nDAPI = 120;
 nCountries = 1;
 dimensions <- c("daterangeday", "prop27", "evar9");
-metrics <- c("visitors");
+metrics <- c("pageviews");
 top = c(nDay, nDAPI, nCountries);
 search = c("", "", "MATCH 'it'");
 
 df_err <- extractMultipleDay(firstDay, nDay, dimensions, metrics, top, search, segmentId)
 
 dimensions <- c("daterangeday", "evar9");
-metrics <- c("visitors");
+metrics <- c("pageviews");
 top = c(nDay, nCountries);
 search = c("", "MATCH 'it'");
 
@@ -113,9 +113,8 @@ df_elab <- df_err_elab %>%
   mutate_at(c('uv_tot','uv_err'), as.numeric) %>%
   mutate(
     err_rate = percent(round(ifelse(uv_tot > 0, uv_err / uv_tot, 0),3))
-    ) 
-
-  #filter(Country == "it" & Error.Code..DAPI. == 7959)
+    ) %>% 
+  filter(Error.Code..DAPI. == 194 | Error.Code..DAPI. == 7959 | Error.Code..DAPI. == 2700 | Error.Code..DAPI. == 40834)
   #filter(Country == "it")
 
 
@@ -124,8 +123,23 @@ df_elab <- df_err_elab %>%
 
 ggplot(data = df_elab, aes(x=Day, y=err_rate, group=Error.Code..DAPI., color=Error.Code..DAPI.)) +
   geom_line() +
-  theme(legend.position="none") +
-  facet_wrap(~Error.Code..DAPI.,, nrow=5, ncol=4)
+  theme(
+        # axis.line=element_blank(),
+        axis.text.x=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks=element_blank(),
+        #axis.title = element_text(size = rel(1.5)),
+        axis.title.x = element_text(size = rel(1.5)),
+        # axis.title.y=element_blank(),
+        # panel.background=element_blank(),
+        # panel.border=element_blank(),
+        # panel.grid.major=element_blank(),
+        # panel.grid.minor=element_blank(),
+        # plot.background=element_blank(),
+        legend.position="none",
+        panel.background = element_rect(fill = "white", colour = "grey50")
+        ) +
+  facet_wrap(~Error.Code..DAPI.,, nrow=2, ncol=2)
 
   
 
