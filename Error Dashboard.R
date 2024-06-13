@@ -102,11 +102,11 @@ df_uv <- extractMultipleDay(firstDay, nDay, dimensions, metrics, top, search, se
 
 df_err_elab <- df_err %>%   
   mutate(Country = tolower(Country)) %>% 
-  rename(uv_err = Unique.Visitors)
+  rename(uv_err = Page.Views)
 
 df_uv_elab <- df_uv %>%   
   mutate(Country = tolower(Country)) %>% 
-  rename(uv_tot = Unique.Visitors)
+  rename(uv_tot = Page.Views)
   
 df_elab <- df_err_elab %>%   
   left_join(df_uv_elab, by=c('Day','Country')) %>%
