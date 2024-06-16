@@ -107,7 +107,15 @@ top = c(nDay,nLTC);
 segmentId = 's4461_651d73ffbcbd9254fe0ddee0';
 search = c("","");
 
-df_pageView <- extractMultipleDay(period, firstDay, nDay, dimensions, metrics, top, segmentId, search) %>% 
+df_pageView <- extractMultipleDay(period, firstDay, nDay, dimensions, metrics, top, segmentId, search) 
+
+df_pageView_elab <- df_pageView %>% 
+  select(-c('Revenue', 'Period')) %>% 
+  pivot_wider(
+    names_from = Day,
+    values_from = c(Visits)
+  )
+  
   mutate(
     Period = period,
     VCR_tkts = X004..VCR,
