@@ -75,8 +75,8 @@ extractMultipleDay <- function(period, firstDay, nDay, dimensions, metrics, top,
 #set_config(use_proxy("proxy.user.alitalia.local", port = 8080, username = "IT011820", password = "Agosto24#", auth = "basic"))
 
 # Login JWT
-#aw_auth_with('jwt')
-aw_auth_with('oauth')
+aw_auth_with('jwt')
+#aw_auth_with('oauth')
 aw_auth()
 
 
@@ -90,10 +90,9 @@ aw_auth()
 ### - E_xtract
 updateWeek = 'Y';
 
-
 ##DF_PAGEVIEW
 period = 'PRE_WEB';
-firstDay = '2024-06-03';
+firstDay = '2024-08-05';
 nDay = 7;
 nCountries = 1;
 segmentId = NA;
@@ -139,15 +138,71 @@ df_pageView_elab <- df_pageView %>%
     drop_e107 = e106_e107 / e106,
   ) %>%
   select(-c(Period, Visits, e101, e102, e103, e105, e106, e107)) %>%
-  #select(-c(Country, visit_e101, e101_e102, e102_e103, e103_e105, e105_e106, e106_e107)) %>% 
-  select(-c(visit_e101, e101_e102, e102_e103, e103_e105, e105_e106, e106_e107)) %>% 
-  select(-c(drop_e101, drop_e102, drop_e103, drop_e106, drop_e107))
-  
+  select(-c(visit_e101, e101_e102, e102_e103, e103_e105, e105_e106, e106_e107))
+
 d_visit <- df_pageView_elab %>% 
-pivot_wider(
-  names_from = Day,
-  values_from = drop_visit
-)
+  select(c(Country, Day, drop_visit)) %>% 
+  mutate(
+    label = 'Visit --> Select Flight'
+  ) %>% 
+  pivot_wider(
+    names_from = Day,
+    values_from = drop_visit
+  ) 
+
+d_e101 <- df_pageView_elab %>% 
+  select(c(Country, Day, drop_e101)) %>% 
+  mutate(
+    label = 'Select Flight --> Flight Recap'
+  ) %>% 
+  pivot_wider(
+    names_from = Day,
+    values_from = drop_e101
+  )
+
+d_e102 <- df_pageView_elab %>% 
+  select(c(Country, Day, drop_e102)) %>% 
+  mutate(
+    label = 'Flight Recap --> Personal Information'
+  ) %>% 
+  pivot_wider(
+    names_from = Day,
+    values_from = drop_e102
+  )
+
+d_e103 <- df_pageView_elab %>% 
+  select(c(Country, Day, drop_e103)) %>% 
+  mutate(
+    label = 'Personal Information --> Ancillary'
+  ) %>% 
+  pivot_wider(
+    names_from = Day,
+    values_from = drop_e103
+  )
+
+d_e106 <- df_pageView_elab %>% 
+  select(c(Country, Day, drop_e106)) %>% 
+  mutate(
+    label = 'Ancillary --> Payment'
+  ) %>% 
+  pivot_wider(
+    names_from = Day,
+    values_from = drop_e106
+  )
+
+d_e107 <- df_pageView_elab %>% 
+  select(c(Country, Day, drop_e107)) %>% 
+  mutate(
+    label = 'Payment --> Receipt'
+  ) %>% 
+  pivot_wider(
+    names_from = Day,
+    values_from = drop_e107
+  )
+
+  df_vMerge <- d_visit %>% 
+  rbind(d_e101, d_e102, d_e103, d_e106, d_e107)
+
 
 write_xlsx(df_pageView_elab, "C:/Users/IT011820/OneDrive - ITA Italia Trasporto Aereo/Desktop/0. R/02_exported/df_pageView_elab.xlsx")
 
